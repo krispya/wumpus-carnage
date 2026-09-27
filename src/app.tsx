@@ -20,7 +20,7 @@ import { dither, grain, uCurtain, vignette } from './post/materials';
 import { hdrTarget } from './post/targets';
 import { SoundRenderer } from './sound/renderer';
 import { TransformView } from './transform/traits';
-import { CAMERA } from './viewport/content';
+import { CAMERA, FRAME_RATE } from './viewport/content';
 import { underSky } from './void/materials';
 import { Void } from './void/renderer';
 import { world } from './world';
@@ -38,7 +38,11 @@ export function App() {
           position: [...CAMERA.position],
         }}
         dpr={[1, matchMedia('(pointer: coarse)').matches ? 1.5 : 2]}
-        renderer={{ toneMapping: NeutralToneMapping, toneMappingExposure: 1 }}
+        renderer={{
+          toneMapping: NeutralToneMapping,
+          toneMappingExposure: 1,
+          scheduler: { fps: FRAME_RATE },
+        }}
       >
         <Suspense fallback={null}>
           <FrameLoop />

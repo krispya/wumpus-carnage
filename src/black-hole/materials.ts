@@ -153,7 +153,11 @@ export function throughHole(
   backdrop: TextureNode
 ): Node<'vec3'> {
   const radius = length(uCameraPosition.sub(uHoleCentre)).div(uHoleRadius.max(1e-4));
-  const tracedRay = rayTable(radius, uHoleRadius.greaterThan(1e-4).and(uInside.lessThanEqual(0.5)));
+  const tracedRay = rayTable(
+    radius,
+    uHoleRadius.greaterThan(1e-4).and(uInside.lessThanEqual(0.5)),
+    () => uHoleRadius.value > 1e-4 && uInside.value <= 0.5
+  );
 
   return Fn((builder) => {
     const foreground = lit.toVar();

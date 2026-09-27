@@ -23,6 +23,7 @@ import { moveBodies, pullTethers, tumbleBodies } from './motion/systems';
 import { listenForSounds, playSounds } from './sound/systems';
 import { updateTime } from './time/systems';
 import { useViewport } from './viewport/hooks';
+import { FRAME_RATE } from './viewport/content';
 import { settleOffsets, syncTransformViews } from './transform/systems';
 import {
   blinkEyes,
@@ -65,7 +66,7 @@ export function FrameLoop() {
       frameShot(world);
       listenForSounds(world);
     },
-    { id: 'simulation', phase: 'physics' }
+    { id: 'simulation', phase: 'physics', fps: FRAME_RATE }
   );
 
   useFrame(
@@ -79,7 +80,7 @@ export function FrameLoop() {
       syncInsertView(world);
       playSounds(world);
     },
-    { id: 'views', phase: 'update' }
+    { id: 'views', phase: 'update', fps: FRAME_RATE }
   );
 
   return null;

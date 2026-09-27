@@ -24,7 +24,7 @@ import {
   vec3,
   vec4,
 } from 'three/tsl';
-import { FloatType, NearestFilter, type Node } from 'three/webgpu';
+import { FloatType, NearestFilter, type Node, type NodeFrame } from 'three/webgpu';
 import { LENS } from './content';
 
 /**
@@ -49,8 +49,11 @@ function traceAngle(distance: Node<'float'>): Node<'float'> {
   );
 }
 
-/** Trace one plane through a spherical hole, shared by every screen ray at the same angle. */
-export function rayTable(distance: Node<'float'>, active: Node<'bool'>) {
+/**
+ * Trace one plane through a spherical hole, shared by every screen ray at the same angle. It is traced only on frames
+ * a hole bends the light, `tracing`.
+ */
+export function rayTable(distance: Node<'float'>, active: Node<'bool'>, tracing: () => boolean) {
   const limit = traceAngle(distance);
   const traced = Fn(() => {
     const result = vec4(0).toVar();
@@ -141,6 +144,8 @@ export function rayTable(distance: Node<'float'>, active: Node<'bool'>) {
     depthBuffer: false,
   });
   table.name = 'black-hole-rays';
+  const trace = table.updateBefore.bind(table);
+  table.updateBefore = (frame: NodeFrame) => (tracing() ? trace(frame) : undefined);
   return (angle: Node<'float'>): Node<'vec3'> => {
     const index = clamp(angle.div(limit), 0, 1).mul(8191);
     const lower = floor(index);
