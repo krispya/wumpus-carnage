@@ -8,7 +8,8 @@ import { bloom } from 'three/addons/tsl/display/BloomNode.js';
 import { convertToTexture, pass, renderOutput, vec4 } from 'three/tsl';
 import { NeutralToneMapping } from 'three/webgpu';
 import { BattleRenderer } from './battle/renderer';
-import { backdropCamera, dreadGrade, throughHole } from './black-hole/materials';
+import { dreadGrade, throughHole } from './black-hole/materials';
+import { BackdropPass } from './black-hole/pass';
 import { BlackHoleRenderer } from './black-hole/renderer';
 import { overInsert } from './director/materials';
 import { ShotRenderer, StartButton } from './director/renderer';
@@ -70,10 +71,7 @@ function Scene() {
 function Post() {
   useRenderPipeline(({ renderPipeline, scene, camera }) => {
     const shot = pass(scene, camera, { samples: 4 });
-    // The backdrop is only ever seen bent, spread, and dragged round the hole, so half the frame's resolution
-    // carries it.
-    const backdrop = pass(scene, backdropCamera);
-    backdrop.setResolutionScale(0.5);
+    const backdrop = new BackdropPass(scene);
     const bent = convertToTexture(
       throughHole(
         shot.getTextureNode('output'),
