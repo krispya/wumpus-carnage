@@ -4,7 +4,7 @@
 
 Sorry Wumpus.
 
-Made using Math, Glyph, Koota and React Three Fiber from pmndrs.
+Made using Math, Koota and React Three Fiber from pmndrs.
 
 ## Credits
 
