@@ -1,6 +1,7 @@
 import type { Entity, World } from 'koota';
 import { clamp, vec3, type Vec3 } from 'math';
 import { mulberry32 } from 'math/random';
+import { Framing } from '../director/traits';
 import { Time } from '../time/traits';
 import { frameAt } from '../viewport/content';
 import { sequenceActions } from '../sequence/actions';
@@ -24,6 +25,7 @@ import {
   VAST_FLARES,
 } from './content';
 import { Battle, BattleView, Blast, Bolt, Flare, Shell } from './traits';
+import { openingBattleFrame, orientBattle, placeBattle, type BattleFrame } from './framing';
 
 type Draw = () => number;
 type Range = readonly [number, number];
@@ -47,9 +49,12 @@ const forward = vec3.fromValues(0, 0, 1);
  * tips a little toward or away from the camera, and a path centred somewhere in the frame. A shot that impacts
  * ends its path inside the frame instead, where its flare can be seen.
  */
-function fire(world: World, draw: Draw, style: ShotStyle, aspect: number): void {
+function fire(world: World, draw: Draw, style: ShotStyle, aspect: number, frame?: BattleFrame): void {
   const z = between(draw, style.depth);
-  const [halfWidth, halfHeight] = frameAt(z, aspect);
+  const [restWidth, restHeight] = frameAt(z, aspect);
+  const halfHeight =
+    frame === undefined ? restHeight : (frame.distance - z) * frame.halfHeightPerDistance;
+  const halfWidth = halfHeight * aspect;
   const angle = draw() * Math.PI * 2;
   const heading = vec3.normalize(
     vec3.create(),
@@ -67,8 +72,13 @@ function fire(world: World, draw: Draw, style: ShotStyle, aspect: number): void 
           z
         )
       : passing(draw, heading, between(draw, style.miss));
+  if (frame !== undefined) {
+    placeBattle(target, target, frame);
+    orientBattle(heading, heading, frame);
+  }
   const from = vec3.scaleAndAdd(vec3.create(), target, heading, impact ? -span : -span / 2);
-  const speed = beam ? style.beam.speed : between(draw, style.bolt.speed);
+  // Keep traversal time stable as the opening's world-space footprint expands.
+  const speed = (beam ? style.beam.speed : between(draw, style.bolt.speed)) * (halfWidth / restWidth);
   const length = beam ? span * 2 : between(draw, style.bolt.length);
   const shot: Shot = {
     from,
@@ -87,7 +97,7 @@ function fire(world: World, draw: Draw, style: ShotStyle, aspect: number): void 
   const volley = draw() < style.volley.chance ? Math.round(between(draw, style.volley.count)) : 1;
   const spacing = between(draw, style.volley.spacing);
 
-  vec3.normalize(aside, vec3.cross(aside, heading, forward));
+  vec3.normalize(aside, vec3.cross(aside, heading, frame?.back ?? forward));
 
   for (let index = 0; index < volley; index++) {
     vec3.scale(offset, aside, (index - (volley - 1) / 2) * spacing);
@@ -109,10 +119,23 @@ function passing(draw: Draw, heading: Vec3, miss: number): Vec3 {
 }
 
 /** Burst a flare of a style somewhere in the frame. */
-function burst(world: World, draw: Draw, style: FlareStyle, aspect: number): void {
+function burst(
+  world: World,
+  draw: Draw,
+  style: FlareStyle,
+  aspect: number,
+  frame?: BattleFrame
+): void {
   const z = between(draw, style.depth);
-  const [halfWidth, halfHeight] = frameAt(z, aspect);
-  const position = vec3.fromValues((draw() * 2 - 1) * halfWidth, (draw() * 2 - 1) * halfHeight, z);
+  const [, restHeight] = frameAt(z, aspect);
+  const halfHeight =
+    frame === undefined ? restHeight : (frame.distance - z) * frame.halfHeightPerDistance;
+  const position = vec3.fromValues(
+    (draw() * 2 - 1) * halfHeight * aspect,
+    (draw() * 2 - 1) * halfHeight,
+    z
+  );
+  if (frame !== undefined) placeBattle(position, position, frame);
   const color = vec3.fromValues(...pick(draw, FLARE_COLORS).color);
 
   battleActions(world).burstFlare(
@@ -132,11 +155,12 @@ export function wageBattle(world: World): void {
 
   const { delta } = world.get(Time)!;
   const { aspect } = world.get(Viewport)!;
+  const frame = world.get(Framing)?.shot === 'system' ? openingBattleFrame(aspect) : undefined;
   const draw = () => mulberry32.sample(battle.random);
   const step = delta * battle.heat;
 
   for (battle.far -= step; battle.far <= 0; battle.far += between(draw, FAR.interval)) {
-    fire(world, draw, FAR, aspect);
+    fire(world, draw, FAR, aspect, frame);
   }
 
   for (battle.near -= step; battle.near <= 0; battle.near += between(draw, NEAR.interval)) {
@@ -148,11 +172,11 @@ export function wageBattle(world: World): void {
   }
 
   for (battle.flare -= step; battle.flare <= 0; battle.flare += between(draw, FLARES.interval)) {
-    burst(world, draw, FLARES, aspect);
+    burst(world, draw, FLARES, aspect, frame);
   }
 
   for (battle.vast -= step; battle.vast <= 0; battle.vast += between(draw, VAST.interval)) {
-    fire(world, draw, VAST, aspect);
+    fire(world, draw, VAST, aspect, frame);
   }
 
   for (
@@ -160,7 +184,7 @@ export function wageBattle(world: World): void {
     battle.vastFlare <= 0;
     battle.vastFlare += between(draw, VAST_FLARES.interval)
   ) {
-    burst(world, draw, VAST_FLARES, aspect);
+    burst(world, draw, VAST_FLARES, aspect, frame);
   }
 
   world.set(Battle, battle);
