@@ -5,11 +5,11 @@ import { Canvas, useRenderPipeline } from '@react-three/fiber/webgpu';
 import { WorldProvider } from 'koota/react';
 import { Suspense } from 'react';
 import { bloom } from 'three/addons/tsl/display/BloomNode.js';
-import { convertToTexture, pass, renderOutput, vec4 } from 'three/tsl';
+import { convertToTexture, renderOutput, vec4 } from 'three/tsl';
 import { NeutralToneMapping } from 'three/webgpu';
 import { BattleRenderer } from './battle/renderer';
 import { dreadGrade, throughHole } from './black-hole/materials';
-import { BackdropPass } from './black-hole/pass';
+import { BackdropPass, ShotPass } from './black-hole/pass';
 import { BlackHoleRenderer } from './black-hole/renderer';
 import { overInsert } from './director/materials';
 import { ShotRenderer, StartButton } from './director/renderer';
@@ -68,14 +68,13 @@ function Scene() {
  */
 function Post() {
   useRenderPipeline(({ renderPipeline, scene, camera }) => {
-    const shot = pass(scene, camera, { samples: 4 });
+    const shot = new ShotPass(scene, camera);
     const backdrop = new BackdropPass(scene);
     const bent = convertToTexture(
       throughHole(
         shot.getTextureNode('output'),
         shot.getTextureNode('depth'),
-        backdrop.getTextureNode('output'),
-        backdrop.getTextureNode('depth')
+        backdrop.getTextureNode('output')
       )
     );
     const glow = bloom(bent, BLOOM.strength, BLOOM.radius, BLOOM.threshold);

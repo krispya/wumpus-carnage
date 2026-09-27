@@ -4,7 +4,7 @@ import {
   cameraProjectionMatrix,
   cross,
   exp,
-  instancedDynamicBufferAttribute,
+  instancedBufferAttribute,
   mx_fractal_noise_float,
   length,
   max,
@@ -40,6 +40,8 @@ function glowMaterial(name: string): MeshBasicNodeMaterial {
     depthWrite: false,
     side: DoubleSide,
     transparent: true,
+    // Each effect is a flat quad, so drawing its two sides separately adds no visible surface.
+    forceSinglePass: true,
   });
   material.name = name;
 
@@ -59,10 +61,11 @@ export function boltMaterial(
   colorAttribute: InstancedBufferAttribute
 ): MeshBasicNodeMaterial {
   const material = glowMaterial('battle-bolts');
-  const start = instancedDynamicBufferAttribute<'vec3'>(startAttribute, 'vec3');
-  const end = instancedDynamicBufferAttribute<'vec3'>(endAttribute, 'vec3');
-  const shape = instancedDynamicBufferAttribute<'vec3'>(shapeAttribute, 'vec3');
-  const tint = instancedDynamicBufferAttribute<'vec3'>(colorAttribute, 'vec3');
+  // Explicit dirty ranges let the main and backdrop passes share each upload.
+  const start = instancedBufferAttribute<'vec3'>(startAttribute, 'vec3');
+  const end = instancedBufferAttribute<'vec3'>(endAttribute, 'vec3');
+  const shape = instancedBufferAttribute<'vec3'>(shapeAttribute, 'vec3');
+  const tint = instancedBufferAttribute<'vec3'>(colorAttribute, 'vec3');
 
   const centre = mix(start, end, positionGeometry.x.add(0.5));
   const side = normalize(cross(end.sub(start), cameraPosition.sub(centre)));
@@ -93,8 +96,8 @@ export function flareMaterial(
   colorAttribute: InstancedBufferAttribute
 ): MeshBasicNodeMaterial {
   const material = glowMaterial('battle-flares');
-  const centre = instancedDynamicBufferAttribute<'vec4'>(centreAttribute, 'vec4');
-  const glow = instancedDynamicBufferAttribute<'vec4'>(colorAttribute, 'vec4');
+  const centre = instancedBufferAttribute<'vec4'>(centreAttribute, 'vec4');
+  const glow = instancedBufferAttribute<'vec4'>(colorAttribute, 'vec4');
 
   const toCamera = normalize(cameraPosition.sub(centre.xyz));
   const right = normalize(cross(vec3(0, 1, 0), toCamera));
@@ -128,8 +131,8 @@ export function blastMaterial(
   stateAttribute: InstancedBufferAttribute
 ): MeshBasicNodeMaterial {
   const material = glowMaterial('battle-blasts');
-  const centre = instancedDynamicBufferAttribute<'vec4'>(centreAttribute, 'vec4');
-  const state = instancedDynamicBufferAttribute<'vec3'>(stateAttribute, 'vec3');
+  const centre = instancedBufferAttribute<'vec4'>(centreAttribute, 'vec4');
+  const state = instancedBufferAttribute<'vec3'>(stateAttribute, 'vec3');
   const color = (name: keyof typeof BLAST.colors) => vec3(...BLAST.colors[name]);
 
   const toCamera = normalize(cameraPosition.sub(centre.xyz));

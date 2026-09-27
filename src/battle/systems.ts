@@ -1,4 +1,5 @@
 import type { Entity, World } from 'koota';
+import type { InstancedBufferAttribute } from 'three/webgpu';
 import { clamp, vec3, type Vec3 } from 'math';
 import { mulberry32 } from 'math/random';
 import { Framing } from '../director/traits';
@@ -285,6 +286,16 @@ function write(
   array[index * 3 + 2] = values[2];
 }
 
+/** Upload only the instances drawn this frame, replacing any range left by a skipped pass. */
+function upload(attribute: InstancedBufferAttribute, count: number): void {
+  attribute.clearUpdateRanges();
+
+  if (count === 0) return;
+
+  attribute.addUpdateRange(0, count * attribute.itemSize);
+  attribute.needsUpdate = true;
+}
+
 /** Write each lit shot's stretch and each flare into the view's instance buffers. */
 export function syncBattleView(world: World): void {
   const view = world.get(BattleView);
@@ -368,13 +379,13 @@ export function syncBattleView(world: World): void {
   view.bolts.count = bolts;
   view.flares.count = flares;
   view.blasts.count = blasts;
-  view.blastCentre.needsUpdate = true;
-  view.blastState.needsUpdate = true;
+  upload(view.blastCentre, blasts);
+  upload(view.blastState, blasts);
 
   for (const attribute of [view.boltStart, view.boltEnd, view.boltShape, view.boltColor]) {
-    attribute.needsUpdate = true;
+    upload(attribute, bolts);
   }
 
-  view.flareCentre.needsUpdate = true;
-  view.flareColor.needsUpdate = true;
+  upload(view.flareCentre, flares);
+  upload(view.flareColor, flares);
 }

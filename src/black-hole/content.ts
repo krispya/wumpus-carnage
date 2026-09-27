@@ -15,8 +15,8 @@ export const FOREGROUND = 1;
 
 /**
  * How light is traced past the hole: rays that pass within `reach` horizon radii are followed step by step, taking
- * no more than `steps` steps, and the rest are bent whole. Once one escapes, it is followed out through the frame's
- * depth in `depths` steps to find what it meets. What lies less than `beside[0]` world units past the hole keeps its
+ * no more than `steps` steps, and the rest are bent whole. Escaped rays sample the backdrop at the far plane.
+ * What lies less than `beside[0]` world units past the hole keeps its
  * place in the frame and falls into the hole in its own light, and what lies more than `beside[1]` past it is seen
  * only where its bent light lands. Light that turns back out within `skim` horizon radii of the photon sphere has
  * circled the hole and is let fade. Space round the hole is dragged round with its spin, `swirl` radians a second at
@@ -33,7 +33,6 @@ export const LENS = {
   backdropAspect: 1.5,
   reach: 16,
   steps: 120,
-  depths: 14,
   beside: [5, 9] as const,
   skim: 0.7,
   swirl: 0.45,

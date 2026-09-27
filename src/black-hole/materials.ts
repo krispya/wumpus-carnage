@@ -145,10 +145,10 @@ function least(
  * Trace the frame through the hole. There is nothing round it to shine: it is only a hole, and what it does is bend
  * the light of everything behind it. Each pixel's ray is followed back from the camera past it, bent as light is:
  * rays that come too close fall in, leaving its shadow, and the rest escape to show whatever they meet. That is
- * found in the backdrop, the frame drawn again without what stands in front of the hole, so nothing there hides what
- * a ray was heading for: the bent ray is followed out until it passes behind what the backdrop shows where it has
- * got to, dragged round the hole the closer it passes. If it leaves the frame, bent wide it meets the sky, and only
- * nudged, about what the frame shows at its edge. What lies beside the hole or nearer is left as it was, drawn over
+ * found in the backdrop, the sky and additive effects drawn without the foreground. They leave depth at the far
+ * plane, where escaped rays land, dragged round the hole the closer they pass. If a ray leaves the frame, bent
+ * wide it meets the sky, and only nudged, about what the frame shows at its edge. What lies beside the hole or
+ * nearer is left as it was, drawn over
  * the bent light, to fall into it in its own light. A camera falling in sees the sky swept forward by its own speed,
  * so the hole ahead looks smaller than it is and the whole universe crowds round it in a ring, brighter the faster
  * it falls, and once it has fallen past the horizon there is nothing left to see.
@@ -156,14 +156,11 @@ function least(
 export function throughHole(
   lit: TextureNode,
   depth: TextureNode,
-  backdrop: TextureNode,
-  backdropDepth: TextureNode
+  backdrop: TextureNode
 ): Node<'vec3'> {
-  /** How far ahead of the camera the scene lies at `at` on screen, in the frame and in the backdrop. */
+  /** How far ahead of the camera the foreground lies at `at` on screen. */
   const distanceAt = (at: Node<'vec2'>) =>
     perspectiveDepthToViewZ(depth.sample(at).x, uCameraClip.x, uCameraClip.y).negate();
-  const behindAt = (at: Node<'vec2'>) =>
-    perspectiveDepthToViewZ(backdropDepth.sample(at).x, uCameraClip.x, uCameraClip.y).negate();
 
   return Fn(() => {
     const result = lit.sample(uv()).rgb.toVar();
@@ -272,7 +269,6 @@ export function throughHole(
         const seen = vec3(0).toVar();
 
         If(escaped.greaterThan(0.5), () => {
-          const exit = uHoleCentre.add(p.mul(uHoleRadius));
           const toward = dot(away, forward);
           const axis = normalize(origin);
           const drag = uSwirl
@@ -280,54 +276,25 @@ export function throughHole(
             .div(passing.mul(passing).add(1))
             .mul(smoothstep(LENS.reach, LENS.reach * 0.5, passing));
 
-          /**
-           * Where the escaped ray lands on screen once it is `distance` ahead of the camera. It is dragged round
-           * the hole the more the further past it it is. The sky is seen by its direction alone, so toward the far
-           * plane the ray is taken as leaving from the camera.
-           */
-          const landing = (distance: Node<'float'>) => {
-            const from = mix(
-              exit,
-              uCameraPosition,
-              smoothstep(uCameraClip.y.mul(0.4), uCameraClip.y, distance)
-            );
-            const point = from.add(
-              away.mul(distance.sub(dot(from.sub(uCameraPosition), forward)).div(toward.max(1e-3)))
-            );
-            const dragged = drag.mul(clamp(distance.sub(holeDepth).div(LENS.dragDepth), 0, 1));
-            const clip = uCameraViewProjection.mul(
-              vec4(uHoleCentre.add(turned(point.sub(uHoleCentre), axis, dragged)), 1)
-            );
+          // The sky is seen by direction alone, projected from the camera onto the backdrop's far plane.
+          const point = uCameraPosition.add(away.mul(uCameraClip.y.div(toward.max(1e-3))));
+          const dragged = drag.mul(clamp(uCameraClip.y.sub(holeDepth).div(LENS.dragDepth), 0, 1));
+          const clip = uCameraViewProjection.mul(
+            vec4(uHoleCentre.add(turned(point.sub(uHoleCentre), axis, dragged)), 1)
+          );
+          const landing = clip.xy.div(clip.w).mul(vec2(0.5, -0.5)).add(0.5).toVar();
 
-            return clip.xy.div(clip.w).mul(vec2(0.5, -0.5)).add(0.5);
-          };
-
-          // Follow it out from beside the hole, deeper and deeper, until it passes behind whatever the backdrop shows
-          // where it has got to: that is what it meets. Where it is outside the frame the frame cannot say.
+          // The backdrop has no depth-writing surfaces, so an escaped ray meets its far plane directly.
           const target = vec2(0).toVar();
           const met = float(0).toVar();
-          const last = nearest.toVar();
 
           If(toward.greaterThan(0.02), () => {
-            Loop(LENS.depths, ({ i }) => {
-              const share = float(i).add(1).div(LENS.depths);
-              const distance = mix(nearest, uCameraClip.y, share.mul(share));
-              const at = landing(distance);
-              const inside = least(at.x, at.x.oneMinus(), at.y, at.y.oneMinus()).greaterThanEqual(0);
-              const surface = behindAt(at.clamp(0, 1));
+            const at = landing;
+            const inside = least(at.x, at.x.oneMinus(), at.y, at.y.oneMinus()).greaterThanEqual(0);
 
-              If(
-                inside
-                  .and(surface.greaterThan(max(last.sub(0.5), nearest)))
-                  .and(surface.lessThan(distance.add(0.01))),
-                () => {
-                  target.assign(at);
-                  met.assign(1);
-                  Break();
-                }
-              );
-
-              last.assign(distance);
+            If(inside, () => {
+              target.assign(at);
+              met.assign(1);
             });
           });
 
@@ -340,7 +307,7 @@ export function throughHole(
           If(framed.lessThan(0.999), () => {
             const [nudged, wide] = LENS.leaving;
             const beyond = mix(
-              backdrop.sample(landing(uCameraClip.y).clamp(0, 1)).rgb,
+              backdrop.sample(landing.clamp(0, 1)).rgb,
               skyAt(turned(away, axis, drag)),
               smoothstep(nudged, wide, length(away.sub(ray)))
             );
