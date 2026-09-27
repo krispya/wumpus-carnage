@@ -1,3 +1,4 @@
+import '@fontsource-variable/geist';
 import './styles.css';
 
 import { Canvas, useRenderPipeline } from '@react-three/fiber/webgpu';

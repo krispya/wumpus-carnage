@@ -12,7 +12,6 @@
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",
-    "@fontsource-variable/geist-mono": "^5.3.0",
     "@react-three/fiber": "10.0.0-alpha.5",
     "koota": "0.6.6",
     "math": "0.1.0",
