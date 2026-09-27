@@ -60,8 +60,8 @@ const eclipser = sliver.map(
 
 /**
  * The star along `direction`, and the dark world crossing it: what burns behind the world, which is the star, its
- * glow, and the beams fanning out from the sliver of it left showing, cut by the world's shadow; the world itself,
- * dark, its air lit in a thin ring of fire nearest the sliver; how much of the sky the world covers; and the glow
+ * glow, and the beams fanning out from the sliver of it left showing, cut by the world's shadow. The world itself,
+ * dark, its air lit in a thin ring of fire nearest the sliver. How much of the sky the world covers, and the glow
  * of its air just past its edge. Angles are measured flat across the sky round the star, which they barely leave.
  */
 function eclipseAt(direction: Node<'vec3'>) {
@@ -277,7 +277,7 @@ export function skyAt(direction: Node<'vec3'>) {
 
   const [fine, bright] = STARS.layers.map(starLayer);
   const stars = fine!.add(bright!).mul(dust.mul(NEBULA.shade).oneMinus());
-  // Where the cloud gathers thickest it is cobalt; where it thins, indigo; and near the star it glows with its light.
+  // Where the cloud gathers thickest it is cobalt. Where it thins, indigo, and near the star it glows with its light.
   const cloudColor = mix(
     rgb(NEBULA.thin),
     rgb(NEBULA.thick),

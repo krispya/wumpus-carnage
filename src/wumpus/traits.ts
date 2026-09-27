@@ -10,9 +10,9 @@ export const Wumpus = trait();
 
 /**
  * How the wumpus holds itself this frame: each joint's turn from its rest pose, in radians about the model's own
- * x, y and z; how far the head has sunk into the shoulders, from 0 to 1; how far the torso has breathed in, as its
- * height over its rest height; how shut its eyes are, from 0, open, to 1, shut, and how wide, as a multiple of
- * their rest size; and the leaf's turn about its stem.
+ * x, y and z. How far the head has sunk into the shoulders, from 0 to 1. How far the torso has breathed in, as its
+ * height over its rest height. How shut its eyes are, from 0, open, to 1, shut, and how wide, as a multiple of
+ * their rest size, and the leaf's turn about its stem.
  */
 export const Pose = trait({
   head: (): Vec3 => vec3.create(),
@@ -28,9 +28,9 @@ export const Pose = trait({
 });
 
 /**
- * When the eyes blink: seconds until the next blink is due; seconds into the current blink, or -1 between blinks;
- * seconds since the last blink ended; whether another follows this one; the head's turn last frame, to feel for a
- * glance; how much more often than usual it blinks; and the random sequence the intervals are drawn from.
+ * When the eyes blink: seconds until the next blink is due. Seconds into the current blink, or -1 between blinks,
+ * seconds since the last blink ended. Whether another follows this one. The head's turn last frame, to feel for a
+ * glance. How much more often than usual it blinks, and the random sequence the intervals are drawn from.
  */
 export const Blinking = trait({
   wait: 0,

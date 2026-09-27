@@ -48,7 +48,7 @@ function glowMaterial(name: string): MeshBasicNodeMaterial {
 
 /**
  * Laser bolts. Each is a strip stretched from its tail to its head and turned about its length to face the camera.
- * Across it, a core of the bolt's colour burning toward white sits inside a glow of it; along it, a streaking bolt brightens
+ * Across it, a core of the bolt's colour burning toward white sits inside a glow of it. Along it, a streaking bolt brightens
  * from its tail to its head, and both ends taper. Seen from far off a bolt is drawn no thinner than a few pixels,
  * and dims as it is widened, so the distant battle glitters rather than vanishing.
  */
@@ -118,9 +118,9 @@ export function flareMaterial(
 }
 
 /**
- * The giant explosion, a camera-facing disc painted as it burns. A blinding flash at its heart dies in a moment;
+ * The giant explosion, a camera-facing disc painted as it burns. A blinding flash at its heart dies in a moment.
  * its fireball billows out fast and then slower, boiling with turbulence and cooling from white through marigold
- * and ember to ash; a thin shockwave races out ahead of it and fades; and a dusty remnant, teal where it thins and
+ * and ember to ash. A thin shockwave races out ahead of it and fades, and a dusty remnant, teal where it thins and
  * ochre where it gathers, glows on long after, until it fades away.
  */
 export function blastMaterial(

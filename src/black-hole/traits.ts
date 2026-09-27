@@ -4,8 +4,8 @@ import type { PerspectiveCamera } from 'three/webgpu';
 
 /**
  * A black hole, `age` seconds since it formed. What the rest of the scene reads: how wide its shadow is, in world
- * units; how far it has grown from a pinprick, 0 to 1; how hard it pulls, 0 to 1, a little over while it gulps; how
- * far it has dragged space round with it, in radians; the age at which it last swallowed something; and its
+ * units. How far it has grown from a pinprick, 0 to 1. How hard it pulls, 0 to 1, a little over while it gulps. How
+ * far it has dragged space round with it, in radians. The age at which it last swallowed something, and its
  * heartbeat: how far through a beat it is, in radians, how many beats it has throbbed, and how hard it is throbbing
  * now, 0 to 1.
  */
@@ -26,7 +26,7 @@ export const Dread = trait({ level: 0 });
 
 /**
  * A body being drawn into a hole at `centre`: where it was, as an offset from the centre, when it was caught, and
- * how fast it was flying; seconds since then; and how hard the tide is stretching it now.
+ * how fast it was flying. Seconds since then, and how hard the tide is stretching it now.
  */
 export const Captured = trait({
   centre: (): Vec3 => vec3.create(),

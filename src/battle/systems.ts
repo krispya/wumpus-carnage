@@ -11,9 +11,6 @@ import {
   BLAST_CAPACITY,
   BOLT_CAPACITY,
   BOLT_COLORS,
-  BOLT_FADE,
-  BOLT_RISE,
-  BOLT_TAIL,
   CLOSE,
   FAR,
   FLARE_CAPACITY,
@@ -172,7 +169,7 @@ export function wageBattle(world: World): void {
 const spent: Entity[] = [];
 const end = vec3.create();
 
-/** Fly each shot along its path. A shot that impacts bursts where its path ends; the rest fade out. */
+/** Fly each shot along its path. A shot that impacts bursts where its path ends. The rest fade out. */
 export function advanceBolts(world: World): void {
   const { delta } = world.get(Time)!;
 
@@ -249,7 +246,7 @@ export function ageBlasts(world: World): void {
 function lit(age: number, life: number): number {
   if (age <= 0) return 0;
 
-  return Math.min(age / BOLT_RISE, 1) * clamp((life - age) / (life * BOLT_FADE), 0, 1);
+  return Math.min(age / 0.03, 1) * clamp((life - age) / (life * 0.3), 0, 1);
 }
 
 const point = vec3.create();
@@ -288,7 +285,8 @@ export function syncBattleView(world: World): void {
     write(colors, bolts, bolt.color);
     shapes[bolts * 3] = bolt.width;
     shapes[bolts * 3 + 1] = energy;
-    shapes[bolts * 3 + 2] = bolt.beam ? 1 : BOLT_TAIL;
+    // A streaking bolt's tail is dimmer than its head. A beam is lit evenly.
+    shapes[bolts * 3 + 2] = bolt.beam ? 1 : 0.08;
     bolts++;
   });
 

@@ -22,7 +22,7 @@ export const BLAST_CAPACITY = 2;
 
 /**
  * Laser colours, the glow round each bolt's core, weighted by how often each is fired, after the reference's night:
- * ice blue and cornflower, as its cold stars; orange, marigold, and ember, as its fire; crimson; and magenta and
+ * ice blue and cornflower for its cold stars, orange, marigold, and ember for its fire, and crimson, magenta, and
  * orchid, as its smoke. Every core burns its own colour most of the way to white, `BOLT_CORE` of the way, so each
  * bolt is a white-hot line fringed with its hue.
  */
@@ -118,7 +118,7 @@ export const CLOSE: ShotStyle = {
 /**
  * The battle's far reaches, where ships a thousand times the wumpus's size trade fire: beams a hundred units long
  * and units thick, lancing across hundreds of units of dark far behind it. From the wumpus they are thin distant
- * lines; seen from far off, they are the battle.
+ * lines. Seen from far off, they are the battle.
  */
 export const VAST: ShotStyle = {
   depth: [-420, -140],
@@ -157,14 +157,6 @@ export const VAST_FLARES: FlareStyle = {
   life: [2, 4.5],
   energy: [2, 3.4],
 };
-
-/** How quickly a shot lights up, and the share of its life it spends fading out. */
-export const BOLT_RISE = 0.03;
-export const BOLT_FADE = 0.3;
-/** How bright a streaking bolt's tail is next to its head. A beam is lit evenly. */
-export const BOLT_TAIL = 0.08;
-
-export const BATTLE_SEED = 23;
 
 /**
  * The black-hole gun's shell: a crackling orb of cold mint, unlike any laser in the battle, that flies with a heavy

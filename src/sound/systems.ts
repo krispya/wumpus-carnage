@@ -27,7 +27,6 @@ import {
   SWISH,
   TEAR,
   TONE,
-  YELP_FRIGHT,
 } from './content';
 import { Sound, SoundView } from './traits';
 
@@ -71,7 +70,7 @@ function whereHeard(world: World, point: Vec3): { distance: number; pan: number 
 /**
  * Listen to what the scene publishes, from wherever the camera is, and cue a sound for each change: every shot as it
  * fires, each bright flare, each blink, and each fright. A shot close to the camera cracks and rushes across the
- * stereo field from where it came to where it went; a distant one zings, or thumps if it is a beam, quieter, duller,
+ * stereo field from where it came to where it went. A distant one zings, or thumps if it is a beam, quieter, duller,
  * and deeper in the hall the further off it is, so the battle seen from far outside it is barely heard. Runs last in
  * the simulation, so everything this frame changed is heard.
  */
@@ -154,7 +153,7 @@ export function listenForSounds(world: World): void {
   }
 
   // The hole hums while it is open, its drone climbing as it draws the wumpus in, and roaring as the camera falls in
-  // after it; the wumpus wails as it is caught, and the hole gulps it down.
+  // after it. The wumpus wails as it is caught, and the hole gulps it down.
   const hole = world.queryFirst(BlackHole, Transform);
   const holeState = hole?.get(BlackHole);
   const holeAt = hole?.get(Transform)?.position;
@@ -188,7 +187,7 @@ export function listenForSounds(world: World): void {
   sound.dread = dread;
   sound.fall = world.get(Shot)!.speed / INFALL;
 
-  // The end: how hard the tide has the wumpus, held once it is gone, and how fast it tumbles; and once it is gone,
+  // The end: how hard the tide has the wumpus, held once it is gone, and how fast it tumbles, and once it is gone,
   // the hush, until the hole sucks the camera in after it.
   const tumbling = world.queryFirst(Captured, Spin)?.get(Spin);
   sound.torment =
@@ -211,7 +210,7 @@ export function listenForSounds(world: World): void {
   // The wumpus's heart keeps the beat once it is flung and the camera is with it: racing as it tumbles, dropping to a
   // slow, deep pulse once the hole opens and quickening as the hole grows, racing again as the tide takes it,
   // stretching out as time slows for it, and stopping dead once it is gone. It swishes through its tumble: as it
-  // tumbles free, and once the hole has it, once each turn, more and more strained. And as the tide draws it out, its
+  // tumbles free, and once the hole has it, once each turn, more and more strained, and as the tide draws it out, its
   // body creaks.
   const { delta, elapsed } = world.get(Time)!;
   const flung = world.queryFirst(Fear, Transform);
@@ -292,7 +291,7 @@ export function listenForSounds(world: World): void {
 
   // A close call wrings a squeak out of the wumpus as it flinches.
   const fear = world.queryFirst(Fear)?.get(Fear);
-  const frightened = fear !== undefined && fear.startle > YELP_FRIGHT;
+  const frightened = fear !== undefined && fear.startle > 0.5;
 
   if (near && frightened && !heard.frightened) {
     cue('yelp', {
@@ -410,7 +409,7 @@ export function playSounds(world: World): void {
     voice.pan.pan.setTargetAtTime(sound.dronePan, now, 0.2);
   }
   // The end, scored as Gravity is. As the tide takes the wumpus its body groans and creaks, and as it tumbles a rise
-  // climbs without end, faster and louder the faster it turns; and space itself tears, saturating everything. Once it
+  // climbs without end, faster and louder the faster it turns, and space itself tears, saturating everything. Once it
   // is gone it all falls away to a low organ, and as the camera is sucked in the rise and the tearing come back,
   // harder, to the horizon.
   const { riser, strain, organ, tear, own } = view;
@@ -428,7 +427,7 @@ export function playSounds(world: World): void {
   strain.level.gain.setTargetAtTime(straining * LEVELS.strain, now, settle);
   strain.source.playbackRate.setTargetAtTime(1 - FREEZE.voice * sound.dilation, now, 0.3);
 
-  // As time slows for the wumpus its sounds darken; at the horizon they are caught and held there, looping on
+  // As time slows for the wumpus its sounds darken. At the horizon they are caught and held there, looping on
   // themselves, stretching and reddening as they fade, as its light does. With the next fall they run free again.
   const [clear, red] = FREEZE.redshift;
   own.tone.frequency.setTargetAtTime(clear * (FREEZE.dark / clear) ** sound.dilation, now, 0.2);

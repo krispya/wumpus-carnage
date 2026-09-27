@@ -1,7 +1,7 @@
 import type { Recording, SoundKind, Voice } from './traits';
 
 /**
- * How the battle sounds with distance. Shots nearer than `near` world units tear past the camera; the rest are the
+ * How the battle sounds with distance. Shots nearer than `near` world units tear past the camera. The rest are the
  * battle's distant clamour, loudest and clearest at `closest` and fading, dulling, and sinking into the hall beyond
  * it, but never below `faint` of their level, so the battle seen from far outside is a faint crackle. Of the distant
  * shots, the nearest are always heard and the furthest only a `heard` share of the time. Only flares of at least
@@ -9,9 +9,6 @@ import type { Recording, SoundKind, Voice } from './traits';
  * Levels are fractions of full scale.
  */
 export const DISTANCE = { near: 18, closest: 26, faint: 0.12, heard: 0.3, boom: 3.5, voice: 40 };
-
-/** The fright past which the wumpus lets out a squeak. */
-export const YELP_FRIGHT = 0.5;
 
 /**
  * A voice's brightness as the cut-off of the low-pass it plays through, spaced evenly in pitch from `floor`, a
@@ -163,8 +160,8 @@ export const IMPLODE_LEAD = 0.76;
 /**
  * Doom's drone. It sounds only while a hole is open: quiet and muffled at first, opening from `tone[0]` to `tone[1]`
  * hertz and swelling as dread rises, climbing `climb` semitones as the hole draws the wumpus in, and joined by the
- * same drone a tritone above as the end nears. As the tide takes the wumpus it climbs `torment` semitones further;
- * once it is gone it falls back to `hush` of its level; and as the camera falls in it swells `fall.swell` times
+ * same drone a tritone above as the end nears. As the tide takes the wumpus it climbs `torment` semitones further.
+ * once it is gone it falls back to `hush` of its level, and as the camera falls in it swells `fall.swell` times
  * louder, climbs `fall.climb` semitones further, and opens right up, to a roar.
  */
 export const DOOM_DRONE = {
@@ -206,8 +203,8 @@ export const TEAR = { torment: 0.45, drive: 10 };
 
 /**
  * The wumpus's heart, which keeps the beat through the flight, after the way Gravity keeps it, in beats a second:
- * racing at `racing` as it tumbles; once the hole opens, dropping, as Gravity's score drops to near silence, to a slow,
- * deep `slow`, quickening to `quick` as the hole grows; racing again up to `frantic` as the tide takes it; and
+ * racing at `racing` as it tumbles. Once the hole opens, dropping, as Gravity's score drops to near silence, to a slow,
+ * deep `slow`, quickening to `quick` as the hole grows. Racing again up to `frantic` as the tide takes it. And
  * stopping dead when it is gone. It sounds `deep` times louder at its slowest, and as though in the ear: dry, with
  * no room round it, and muffled, `muffled` of the way from dull to clear.
  */
@@ -215,9 +212,9 @@ export const HEART = { racing: 2.3, slow: 0.8, quick: 1.5, frantic: 3.2, deep: 1
 
 /**
  * The swish of the wumpus through its tumble, recorded cloth and a rush of air with a breath beneath: every
- * `interval` seconds or so, give or take `scatter`, as it tumbles free; once the hole has it, once each turn of its
+ * `interval` seconds or so, give or take `scatter`, as it tumbles free. Once the hole has it, once each turn of its
  * tumble, though never quicker than `quickest` seconds or slower than `slowest`, `strain` higher as the tide takes
- * it; and never once it is gone.
+ * it, and never once it is gone.
  */
 export const SWISH = { interval: 0.62, scatter: 0.18, quickest: 0.45, slowest: 1.2, strain: 0.35 };
 

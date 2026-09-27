@@ -18,7 +18,7 @@ export const blackHoleActions = createActions((world) => ({
   },
   /**
    * The hole takes hold of a body. It is no longer held by any tether, the way it was flying is handed to the hole
-   * to brake, and it spins faster as it goes; from here the hole alone decides where it is.
+   * to brake, and it spins faster as it goes. From here the hole alone decides where it is.
    */
   captureBody: (entity: Entity) => {
     const hole = world.queryFirst(BlackHole, Transform);

@@ -13,7 +13,6 @@ import { Wumpus } from '../wumpus/traits';
 import {
   BEATS,
   BLAST_AT,
-  CURTAIN_SECONDS,
   EJECTED,
   FLIGHT,
   FLIGHT_SHOT,
@@ -28,7 +27,7 @@ import { Curtain, Framing, Insert, Shot, ShotView } from './traits';
 /** Move the curtain toward where it is heading, at a steady pace. */
 export function drawCurtain(world: World): void {
   const curtain = world.get(Curtain)!;
-  const step = world.get(Time)!.delta / CURTAIN_SECONDS;
+  const step = world.get(Time)!.delta / 0.7;
 
   if (curtain.level === curtain.target) return;
 
@@ -63,7 +62,7 @@ export function syncInsertView(world: World): void {
 }
 
 /**
- * Frame the shot. On a still the camera holds perfectly still on what it framed at the cut; on the flight it plays
+ * Frame the shot. On a still the camera holds perfectly still on what it framed at the cut. On the flight it plays
  * out the flight's move, rolling with the wumpus's tumble while it is caught up in it. Once the camera passes a
  * hole's horizon the scene hears so.
  */
@@ -165,9 +164,9 @@ const chaseAt = vec3.create();
 
 /**
  * The flight, after the moment in Gravity an astronaut is torn loose: a frenzy right on the wumpus, the fireball
- * behind it, the frame rolling with its tumble so the fire whirls round it; a snap to a dead stop ahead of it,
- * level, looking back at it and the blast; a fixation on it as the hole yanks it away, the lens tightening; and the
- * plunge, dragged past it to watch it stretch, then beside it as it is wrung apart; and once it is gone, a pull
+ * behind it, the frame rolling with its tumble so the fire whirls round it. A snap to a dead stop ahead of it,
+ * level, looking back at it and the blast. A fixation on it as the hole yanks it away, the lens tightening, and the
+ * plunge, dragged past it to watch it stretch, then beside it as it is wrung apart, and once it is gone, a pull
  * back to take in the hole, a beat on it, and the camera sucked in, harder and harder.
  */
 function flightShot(
@@ -218,7 +217,7 @@ function flightShot(
   let speed = 0;
 
   // The plunge: the hole takes the camera faster than the wumpus, past it, to hang `hover` radii out, looking back
-  // as it bears down, stretching; it whips past, and the camera latches on beside it, its middle dead centre, as it
+  // as it bears down, stretching. It whips past, and the camera latches on beside it, its middle dead centre, as it
   // is wrung apart at the horizon.
   if (found !== undefined && age > BEATS.taken) {
     const radius = found.get(BlackHole)!.horizon / SHADOW;

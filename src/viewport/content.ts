@@ -9,12 +9,9 @@ export const CAMERA = {
   position: [0, 0, 16] as const,
 };
 
-/** Half the frame's height at a distance of one unit in front of the camera. */
-export const HALF_HEIGHT_PER_DISTANCE = Math.tan((CAMERA.fov * Math.PI) / 360);
-
 /** The frame's half width and half height at world depth `z`, for a frame of `aspect`. */
 export function frameAt(z: number, aspect: number): [number, number] {
-  const halfHeight = (CAMERA.position[2] - z) * HALF_HEIGHT_PER_DISTANCE;
+  const halfHeight = (CAMERA.position[2] - z) * Math.tan((CAMERA.fov * Math.PI) / 360);
 
   return [halfHeight * aspect, halfHeight];
 }

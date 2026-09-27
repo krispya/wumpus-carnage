@@ -17,7 +17,7 @@ function ramp(t: number, from: number, to: number): number {
 }
 
 /**
- * Measure how close doom feels. A growing hole brings a third of it; a capture brings the rest as the hole draws its
+ * Measure how close doom feels. A growing hole brings a third of it. A capture brings the rest as the hole draws its
  * prey in, and holds it there once the prey is gone, until the hole is. Dread follows at its own pace, so the scene
  * sinks into it and climbs back out rather than jumping.
  */
@@ -45,7 +45,7 @@ function heartbeat(phase: number): number {
 
 /**
  * Age each hole and work out what the scene reads from it: it tears open as a pinprick and grows, slowly and then
- * faster and faster, without end; it warms its pull, throbs like a heartbeat that quickens with dread, drags space
+ * faster and faster, without end. It warms its pull, throbs like a heartbeat that quickens with dread, drags space
  * round with it faster the harder it pulls and the nearer doom is, and gulps each meal, swelling past its size and
  * settling back.
  */
@@ -89,7 +89,7 @@ const swallowed: Entity[] = [];
 const coasted = vec3.create();
 
 /**
- * Draw each captured body in. Whatever way it was flying, it coasts on a little as the pull brakes it; then it falls
+ * Draw each captured body in. Whatever way it was flying, it coasts on a little as the pull brakes it. Then it falls
  * straight toward the horizon, barely moving at first, then faster and faster, then slowing to hang just outside it
  * and sinking in at the last, and the nearer it is the harder the tide stretches it. Once its time is up the hole
  * has swallowed it, and the scene hears so.

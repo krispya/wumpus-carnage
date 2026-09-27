@@ -46,9 +46,9 @@ export type SoundKind =
   | 'creak';
 
 /**
- * One sound: what it is and which take of each of its voices; where it sits from -1 left to 1 right, and where it
- * has moved to by the time it ends; its playback rate, level, delay, and the seconds it takes to swell in; its
- * brightness, from 0, muffled to a rumble, to 1, clear; and how much of it the hall and the void carry.
+ * One sound: what it is and which take of each of its voices. Where it sits from -1 left to 1 right, and where it
+ * has moved to by the time it ends. Its playback rate, level, delay, and the seconds it takes to swell in. Its
+ * brightness, from 0, muffled to a rumble, to 1, clear, and how much of it the hall and the void carry.
  */
 export interface SoundCue {
   sound: SoundKind;
@@ -92,8 +92,8 @@ export const Sound = trait({
   dread: 0,
   fall: 0,
   /**
-   * The end: how hard the tide has the wumpus, 0..1, held once it is gone; how fast it tumbles, in turns a second;
-   * whether it is gone; and how hushed the moment after it is gone is, 0..1.
+   * The end: how hard the tide has the wumpus, 0..1, held once it is gone. How fast it tumbles, in turns a second,
+   * whether it is gone, and how hushed the moment after it is gone is, 0..1.
    */
   torment: 0,
   spin: 0,
@@ -166,7 +166,7 @@ export interface SoundDraw {
 }
 
 /**
- * The wumpus's own sounds: they enter at `input` and pass `live` through `tone`, which darkens as time slows for it;
+ * The wumpus's own sounds enter at `input` and pass `live` through `tone`, which darkens as time slows for it.
  * `gate` feeds them into `hold`, a line `loop` feeds back on itself through `redshift`, which is heard at `held` once
  * they are caught, whether they are.
  */

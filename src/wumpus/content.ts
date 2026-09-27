@@ -94,9 +94,6 @@ export const BLINK = {
   seed: 5,
 };
 
-/** How far the neck rides above the torso's middle, so the head lifts as the torso breathes in. */
-export const TORSO_REACH = 0.54;
-
 /**
  * The float, as a performance: the rest of the posture a body settles into without gravity, and how far and how
  * slowly each part wanders from it. Angles are in radians and rates in cycles per second. Arms drift up from
@@ -195,15 +192,15 @@ export const FEAR = {
     reach: 12,
   },
   /**
-   * Flinching: how close a shot must pass to cause one, in world units; how quickly the fright fades, per second;
-   * the fright past which the eyes squeeze shut; how hard the blast knocks the body aside, in units per second;
+   * Flinching: how close a shot must pass to cause one, in world units. How quickly the fright fades, per second,
+   * the fright past which the eyes squeeze shut, and how hard the blast knocks the body aside, in units per second,
    * and the small fright of a distant flash.
    */
   flinch: { range: 6, decay: 1.4, squeeze: 0.3, shove: 4, flash: 0.15 },
   /**
-   * Panic, once it is flung loose, at once, or once a hole has hold of it: how quickly it sets in then, in seconds;
-   * the arms thrashing out and back at their own rates as though swimming away; the legs kicking out of step; the
-   * head lifting out of the shoulders; and its eyes shrinking to pinpricks in terror.
+   * Panic, once it is flung loose, at once, or once a hole has hold of it: how quickly it sets in then, in seconds,
+   * the arms thrashing out and back at their own rates as though swimming away. The legs kicking out of step. The
+   * head lifting out of the shoulders, and its eyes shrinking to pinpricks in terror.
    */
   panic: {
     onset: 0.4,

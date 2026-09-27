@@ -54,7 +54,7 @@ async function loadRecordings(): Promise<Record<Recording, AudioBuffer[]>> {
 /**
  * Voices are rendered offline at full fidelity, 44.1 kHz and sixteen bits, and the mixer pitches them by playback
  * rate. What they play is space opera, struck rather than sustained: blasters that crack and zing like a struck guy
- * wire, turbolasers that thump, and explosions heard across a great distance; and the end, scored and felt as in
+ * wire, turbolasers that thump, and explosions heard across a great distance, and the end, scored and felt as in
  * Gravity. Loops are baked twice over and repeat their settled second half, since every part of them repeats there.
  */
 async function bakeSynths(): Promise<Record<Synth | Loop, AudioBuffer[]>> {
@@ -319,7 +319,7 @@ async function bakeSynths(): Promise<Record<Synth | Loop, AudioBuffer[]>> {
       // Falling in: a roar that swells and climbs faster and faster, as though all of space were pouring down a drain.
       // Wind howls through a band climbing from a rumble to a shriek, a sub groans upward beneath it, two saws a hair
       // apart grind up through a low-pass that opens as they climb, and a siren wails over it all, quavering harder
-      // and harder. It never ends; it is cut.
+      // and harder. It never ends. It is cut.
       noise(
         context,
         [0, 1e-3, 3, 0.15, 5.5, 1, 6.5, 1],

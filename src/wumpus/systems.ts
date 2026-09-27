@@ -8,12 +8,10 @@ import { Captured } from '../black-hole/traits';
 import { Tether, Velocity } from '../motion/traits';
 import { Time } from '../time/traits';
 import { Offset, Transform } from '../transform/traits';
-import { BLINK, FEAR, FLOAT_PERFORMANCE, LEAF_SWAY, TORSO_REACH } from './content';
+import { BLINK, FEAR, FLOAT_PERFORMANCE, LEAF_SWAY } from './content';
 import { Blinking, Fear, Floating, LeafSway, Pose, WumpusRig } from './traits';
 
 const TAU = Math.PI * 2;
-/** Each noise channel reads its own row of the field, spaced so neighbouring channels do not echo one another. */
-const ROW = 7.31;
 
 /**
  * Hold the floating posture and wander from it. Every part mixes a slow wave, which gives the float its rhythm,
@@ -29,10 +27,11 @@ export function performFloating(world: World): void {
 
     const { clock, energy, noise } = floating;
     const wave = (rate: number, phase: number) => Math.sin(TAU * rate * clock + phase);
+    // Space noise channels far enough apart that neighbouring movements do not echo.
     const wander = (channel: number, rate: number) =>
-      simplex3d.sample(noise, clock * rate, channel * ROW, 0);
+      simplex3d.sample(noise, clock * rate, channel * 7.31, 0);
 
-    // The arms float up and forward from their hang; each keeps its own clock, so they never mirror.
+    // The arms float up and forward from their hang. Each keeps its own clock, so they never mirror.
     const rightLift =
       arms.lift + energy * (arms.wave * wave(arms.waveRate, 0) + 0.1 * wander(0, 0.2));
     const leftLift =
@@ -172,8 +171,8 @@ function blend(turn: Vec3, toward: readonly number[], amount: number): void {
 
 /**
  * Lay terror over the float. The standing fear pulls the pose toward the cower, and a fresh fright pulls it all the
- * way; the gaze darts from glance to glance instead of wandering; a due flinch jolts the body, squeezes the eyes,
- * and knocks it aside; and a tremble, a pant, and wide, restless eyes run under everything. Flung loose, or caught
+ * way. The gaze darts from glance to glance instead of wandering. A due flinch jolts the body, squeezes the eyes,
+ * and knocks it aside, and a tremble, a pant, and wide, restless eyes run under everything. Flung loose, or caught
  * by a hole, it panics.
  */
 export function performFear(world: World): void {
@@ -332,7 +331,7 @@ export function blinkEyes(world: World): void {
       blinking.idle += delta;
 
       if (blinking.wait <= 0 || (turning > glance && blinking.idle > rest)) {
-        // A blink after a rest may be the first of two; the second never is.
+        // A blink after a rest may be the first of two. The second never is.
         blinking.again = blinking.idle > rest && draw() < double;
         blinking.since = 0;
         blinking.wait = random.float(draw, interval[0], interval[1]) / blinking.pace;
@@ -398,7 +397,7 @@ export function syncWumpusRig(world: World): void {
     joints.torso.scale.set(girth, pose.breath, girth);
     joints.head.position.set(
       neck.x,
-      neck.y + (pose.breath - 1) * TORSO_REACH - FEAR.duckDepth * pose.duck,
+      neck.y + (pose.breath - 1) * 0.54 - FEAR.duckDepth * pose.duck,
       neck.z
     );
     joints.head.rotation.fromArray(pose.head);

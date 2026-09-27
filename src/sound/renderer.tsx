@@ -29,7 +29,7 @@ export function SoundRenderer() {
     const context = new AudioContext({ latencyHint: 'interactive' });
     const actions = soundActions(world);
 
-    // Some browsers let audio start on its own; the rest wait for the unlock below. A phone can also suspend it
+    // Some browsers let audio start on its own. The rest wait for the unlock below. A phone can also suspend it
     // again, as for a call, so any later gesture starts it once more.
     const running = () => {
       if (context.state === 'running') actions.unlockSound();
@@ -163,7 +163,7 @@ function mix(context: AudioContext, samples: SoundDraw['samples']): SoundDraw {
   drone.pan.connect(reverb);
   tritone.pan.connect(reverb);
 
-  // The rise sounds in the void and the wumpus's body close by; the organ fills the hall.
+  // The rise sounds in the void and the wumpus's body close by. The organ fills the hall.
   const riser = loop(context, samples.riser[0]!, input);
   riser.pan.connect(expanse);
   // The wumpus's own sounds pass through here, so that at the horizon they can be caught and held there, as its
@@ -233,7 +233,7 @@ function loop(context: AudioContext, buffer: AudioBuffer, into: AudioNode): Loop
 /**
  * A stereo space's impulse: a dense tail of noise, different in each ear, that dies at `decay` a second over
  * `seconds` and darkens at `darkening` a second, since air takes the highs first. A room with walls answers first
- * with a few sparse early reflections; a space without them has none, and its tail swells in rather than starting
+ * with a few sparse early reflections. A space without them has none, and its tail swells in rather than starting
  * at once.
  */
 function room(

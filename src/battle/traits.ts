@@ -51,8 +51,8 @@ export const Flare = trait({
 });
 
 /**
- * The battle's pace: how hot it runs, as a multiple of every firing rate; the seconds until the next distant shot,
- * near shot, close call, distant flare, and shot and flare in the far reaches; and the random sequence every shot is
+ * The battle's pace: how hot it runs, as a multiple of every firing rate. The seconds until the next distant shot,
+ * near shot, close call, distant flare, and shot and flare in the far reaches, and the random sequence every shot is
  * drawn from.
  */
 export const Battle = trait({

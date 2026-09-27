@@ -24,7 +24,6 @@ export interface Flight {
 export type ShotName = 'system' | 'flight';
 
 const up = vec3.fromValues(0, 1, 0);
-const sun = vec3.normalize(vec3.create(), vec3.fromValues(...SUN.direction));
 
 /**
  * How the blast flings the wumpus: from `distance` units off it when it goes up, the shockwave throws it `delay`
@@ -88,7 +87,11 @@ export function openingShot(aspect: number): Still {
   // Keep some of the wide's diagonal spread in portrait while bringing the star back inside the frame.
   const framingAspect = WIDE.aspect + (Math.min(aspect, WIDE.aspect) - WIDE.aspect) * 0.8;
   const thirdAcross = Math.atan((Math.tan((WIDE.fov * Math.PI) / 360) * framingAspect) / 3);
-  const wideAim = turnedFrom(sun, -thirdAcross, -thirdHigh);
+  const wideAim = turnedFrom(
+    vec3.normalize(vec3.create(), vec3.fromValues(...SUN.direction)),
+    -thirdAcross,
+    -thirdHigh
+  );
   const systemFrom = before(turnedFrom(wideAim, -thirdAcross, -thirdHigh), BLAST_AT, WIDE.distance);
 
   const shot: Still = {
@@ -178,7 +181,7 @@ export const FLIGHT_SHOT = {
   suck: { build: 1.6, rate: 1.4, shake: 0.02, roll: 1.1, fov: 92 },
 };
 
-/** The opening, in order, and how many seconds each shot holds before the cut to the next; then the flight. */
+/** The opening, in order, and how many seconds each shot holds before the cut to the next. Then the flight. */
 export const OPENING: readonly { shot: ShotName; seconds: number }[] = [
   { shot: 'system', seconds: 4.3 },
 ];
@@ -186,8 +189,8 @@ export const OPENING: readonly { shot: ShotName; seconds: number }[] = [
 /**
  * The animatic's beats, in seconds. `detonate` seconds into the wide the capital ship goes up, and its shockwave
  * flings the wumpus away. After the opening the camera cuts to the flight, the battle burned down to `after` of its
- * fury; `birth` seconds in, the blast's heart collapses into a hole and the battle falls to `hush`; at `capture` the
- * hole takes hold of the wumpus; and at `taken` it takes the camera too. Once the camera is through the horizon the
+ * fury. At `birth`, the blast's heart collapses into a hole and the battle falls to `hush`. At `capture` the
+ * hole takes hold of the wumpus, and at `taken` it takes the camera too. Once the camera is through the horizon the
  * dark and the silence hold for `hold` seconds before it all plays again.
  */
 export const BEATS = {
@@ -208,7 +211,7 @@ export const INFALL = 0.96;
 
 /**
  * The insert, as in a meme reel: `lead` seconds before the capital ship goes up, the image `src` slams onto the
- * frame, `height` of it tall, punching in from `punch` larger over `snap` seconds; it holds for `hold` seconds and
+ * frame, `height` of it tall, punching in from `punch` larger over `snap` seconds. It holds for `hold` seconds and
  * fades over `fade`, the blast going up behind it as it does.
  */
 export const INSERT = {
@@ -220,6 +223,3 @@ export const INSERT = {
   hold: 0.5,
   fade: 0.6,
 };
-
-/** Seconds the curtain takes to open. */
-export const CURTAIN_SECONDS = 0.7;

@@ -2,7 +2,7 @@ import { trait } from 'koota';
 import { quat, vec3, type Quat, type Vec3 } from 'math';
 import type { Object3D } from 'three/webgpu';
 
-/** Where an entity is in the world. Systems write it; views only copy it out. */
+/** Where an entity is in the world. Systems write it. Views only copy it out. */
 export const Transform = trait({
   position: (): Vec3 => vec3.create(),
   rotation: (): Quat => quat.create(),

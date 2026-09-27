@@ -161,7 +161,7 @@ export const directorActions = createActions((world) => {
       battle.initializeBattle();
       wumpusActions(world).spawnWumpus();
     },
-    /** Start the animatic, from the top; once started it plays again and again. */
+    /** Start the animatic, from the top. Once started it plays again and again. */
     startScene: () => {
       world.set(Show, { started: true });
       directorActions(world).replayScene();

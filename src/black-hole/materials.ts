@@ -54,8 +54,8 @@ export const backdropCamera = retained('backdrop', () => new PerspectiveCamera()
  */
 export const holeUniforms = retained('black-hole', () => ({
   /**
-   * The hole: where it is and how wide its horizon is, in the world, or zero while there is none; the axis it spins
-   * about and how far it has dragged space round with it; and how close doom feels, which the whole frame answers.
+   * The hole: where it is and how wide its horizon is, in the world, or zero while there is none. The axis it spins
+   * about and how far it has dragged space round with it, and how close doom feels, which the whole frame answers.
    */
   uHoleCentre: uniform(new Vector3()),
   uHoleRadius: uniform(0),
@@ -147,11 +147,11 @@ function least(
  * rays that come too close fall in, leaving its shadow, and the rest escape to show whatever they meet. That is
  * found in the backdrop, the frame drawn again without what stands in front of the hole, so nothing there hides what
  * a ray was heading for: the bent ray is followed out until it passes behind what the backdrop shows where it has
- * got to, dragged round the hole the closer it passes; if it leaves the frame, bent wide it meets the sky, and only
+ * got to, dragged round the hole the closer it passes. If it leaves the frame, bent wide it meets the sky, and only
  * nudged, about what the frame shows at its edge. What lies beside the hole or nearer is left as it was, drawn over
  * the bent light, to fall into it in its own light. A camera falling in sees the sky swept forward by its own speed,
  * so the hole ahead looks smaller than it is and the whole universe crowds round it in a ring, brighter the faster
- * it falls; and once it has fallen past the horizon there is nothing left to see.
+ * it falls, and once it has fallen past the horizon there is nothing left to see.
  */
 export function throughHole(
   lit: TextureNode,
@@ -223,12 +223,15 @@ export function throughHole(
               );
             });
 
-            const momentum = dot(cross(p, v), cross(p, v));
+            // Radial acceleration conserves angular momentum throughout the trace.
+            const angular = cross(p, v).toVar();
+            const momentum = dot(angular, angular).mul(-1.5).toVar();
             const incoming = dot(p, v).lessThan(0);
             const lowest = float(1e3).toVar();
 
             Loop(LENS.steps, () => {
-              const radius = length(p);
+              const square = dot(p, p).toVar();
+              const radius = sqrt(square).toVar();
               lowest.assign(min(lowest, radius));
 
               If(radius.lessThan(1), () => {
@@ -241,7 +244,7 @@ export function throughHole(
               });
 
               const step = clamp(radius.mul(0.09), 0.03, 2);
-              v.addAssign(p.mul(momentum.mul(-1.5).div(radius.pow(5))).mul(step));
+              v.addAssign(p.mul(momentum.div(square.mul(square).mul(radius))).mul(step));
               p.addAssign(v.mul(step));
             });
 
@@ -332,7 +335,7 @@ export function throughHole(
           const framed = smoothstep(0, 0.03, edge).mul(met);
           seen.assign(backdrop.sample(target).rgb);
 
-          // Where it left the frame, bent wide round the shadow, the sky is what it meets; only nudged, about what
+          // Where it left the frame, bent wide round the shadow, the sky is what it meets. Only nudged, about what
           // the frame shows at its edge where it left.
           If(framed.lessThan(0.999), () => {
             const [nudged, wide] = LENS.leaving;
@@ -346,7 +349,7 @@ export function throughHole(
         });
 
         // Light that has skimmed the photon sphere, circling the hole before it turned back out, is bent too wildly
-        // to follow from pixel to pixel, and would sparkle; it is let fade, so the shadow's edge is clean.
+        // to follow from pixel to pixel, and would sparkle. It is let fade, so the shadow's edge is clean.
         const skimmed = smoothstep(1.5, 1.5 + LENS.skim, periapsis);
         result.assign(mix(result, seen.mul(skimmed), past).mul(boost));
       });
@@ -357,7 +360,7 @@ export function throughHole(
 }
 
 /**
- * Grade the frame for doom. It drains of colour and closes in from its edges, as far as dread has come; round the
+ * Grade the frame for doom. It drains of colour and closes in from its edges, as far as dread has come. Round the
  * hole it keeps its colour, bent as it is.
  */
 export function dreadGrade(color: Node<'vec3'>): Node<'vec3'> {
@@ -375,9 +378,9 @@ export function dreadGrade(color: Node<'vec3'>): Node<'vec3'> {
 
 /**
  * Spaghettify a body's vertex, in its own space, by the tide of a hole, all of it about the body's middle, which
- * stays where it is: stretched along the line to the hole, so its near side reaches in and its far side trails out;
- * squeezed across that line to keep its bulk; wrung about that line, its ends turning opposite ways, more the further
- * they are from the middle; and bent round the hole as the hole's spin drags it, its near end swinging on ahead of
+ * stays where it is. It stretches along the line to the hole, so its near side reaches in and its far side trails out.
+ * squeezed across that line to keep its bulk. Wrung about that line, its ends turning opposite ways, more the further
+ * they are from the middle, and bent round the hole as the hole's spin drags it, its near end swinging on ahead of
  * the middle and its far end falling behind, so it winds in like a noodle. With no tide it is left as it is.
  */
 export function tidal(position: Node<'vec3'>): Node<'vec3'> {

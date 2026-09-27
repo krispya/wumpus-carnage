@@ -83,7 +83,7 @@ function Post() {
       )
     );
     const glow = bloom(bent, BLOOM.strength, BLOOM.radius, BLOOM.threshold);
-    // Half the frame's resolution carries a glow; any less and thin lasers alias into dashes under it.
+    // Half the frame's resolution carries a glow. Any less and thin lasers alias into dashes under it.
     glow.setResolutionScale(0.5);
     const framed = vec4(dreadGrade(bent.add(glow).rgb).mul(vignette).mul(uCurtain.oneMinus()), 1);
     const shown = overInsert(renderOutput(framed).rgb);

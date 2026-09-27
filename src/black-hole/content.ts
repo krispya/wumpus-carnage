@@ -15,13 +15,13 @@ export const FOREGROUND = 1;
 
 /**
  * How light is traced past the hole: rays that pass within `reach` horizon radii are followed step by step, taking
- * no more than `steps` steps, and the rest are bent whole; once one escapes, it is followed out through the frame's
+ * no more than `steps` steps, and the rest are bent whole. Once one escapes, it is followed out through the frame's
  * depth in `depths` steps to find what it meets. What lies less than `beside[0]` world units past the hole keeps its
  * place in the frame and falls into the hole in its own light, and what lies more than `beside[1]` past it is seen
  * only where its bent light lands. Light that turns back out within `skim` horizon radii of the photon sphere has
  * circled the hole and is let fade. Space round the hole is dragged round with its spin, `swirl` radians a second at
  * full pull, `drag` times that for light passing its horizon and less and less further out, so what lies past it
- * winds round into it like sand into a pit; what lies `dragDepth` world units or more past the hole is dragged
+ * winds round into it like sand into a pit. What lies `dragDepth` world units or more past the hole is dragged
  * fully. A ray that leaves the frame shows what the frame shows at its edge if it was bent less than `leaving[0]`
  * radians, and the sky if more than `leaving[1]`.
  * Light climbing out from near the horizon reddens and dims, and is gone by `redshift[0]` horizon radii and clear by
@@ -48,8 +48,8 @@ export const LENS = {
  * The hole's life, in seconds and world units. It tears open out of nothing over `open` as a pinprick, its shadow
  * `pinprick` wide, so small it could be a trick of the eye but for the way space warps round it. Then it grows, at
  * first so slowly it seems not to and then faster and faster, evenly in scale, reaching `full` after `grow` seconds
- * and still growing after at `beyond` of that pace, until it is everything. Its pull warms up over `warm`; it
- * breathes a little; and it gulps what it swallows in one slow swell, `swell` past its size, settling over `gulp`
+ * and still growing after at `beyond` of that pace, until it is everything. Its pull warms up over `warm`. It
+ * breathes a little, and it gulps what it swallows in one slow swell, `swell` past its size, settling over `gulp`
  * seconds, after which it is still.
  */
 export const HOLE = {
@@ -88,7 +88,7 @@ export const CAPTURE = {
 /**
  * Doom. Dread rises as the hole grows and climbs toward its worst as the hole draws the wumpus in, and the whole
  * scene answers it: the hole throbs like a heartbeat, from `calm` beats a second to `frantic`, each throb swelling
- * it by `throb`; the frame drains of colour and closes in. `ease` is how quickly dread follows what is happening,
+ * it by `throb`. The frame drains of colour and closes in. `ease` is how quickly dread follows what is happening,
  * per second.
  */
 export const DOOM = { calm: 0.7, frantic: 2.3, throb: 0.05, ease: 1.5 };

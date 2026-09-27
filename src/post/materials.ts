@@ -21,10 +21,18 @@ export const { uCurtain } = retained('post', () => ({ uCurtain: uniform(1) }));
 /** The glow around anything brighter than white: lasers, flares, and the brightest stars. */
 export const BLOOM = { strength: 0.9, radius: 0.5, threshold: 1 };
 
-const centred = screenUV.sub(0.5).mul(vec2(screenSize.x.div(screenSize.y), 1));
-
 /** Darken gently toward the frame's corners, keeping the eye on the middle. Multiplies linear colour. */
-export const vignette = smoothstep(0.35, 1.05, centred.length()).oneMinus().mul(0.25).add(0.75);
+export const vignette = smoothstep(
+  0.35,
+  1.05,
+  screenUV
+    .sub(0.5)
+    .mul(vec2(screenSize.x.div(screenSize.y), 1))
+    .length()
+)
+  .oneMinus()
+  .mul(0.25)
+  .add(0.75);
 
 /**
  * How strong the film's grain is, in display steps either way at its strongest, and how many times a second it

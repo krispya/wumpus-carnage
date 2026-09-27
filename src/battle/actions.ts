@@ -1,7 +1,7 @@
 import { createActions } from 'koota';
 import { vec3, type Vec3 } from 'math';
 import { mulberry32 } from 'math/random';
-import { BATTLE_SEED, BLAST, CLOSE, FAR, FLARES, NEAR, SHELL } from './content';
+import { BLAST, CLOSE, FAR, FLARES, NEAR, SHELL } from './content';
 import { Battle, BattleView, Blast, Bolt, Flare, Shell, type BattleDraw } from './traits';
 
 export interface Shot {
@@ -24,7 +24,7 @@ export const battleActions = createActions((world) => ({
   initializeBattle: () => {
     world.add(
       Battle({
-        random: mulberry32.create(BATTLE_SEED),
+        random: mulberry32.create(23),
         far: FAR.interval[0],
         near: NEAR.interval[0],
         close: CLOSE.interval[0],
