@@ -1,38 +1,48 @@
 import { useWorld } from 'koota/react';
-import { use, useEffect } from 'react';
+import { Suspense, use, useEffect, useState } from 'react';
 import { soundActions } from './actions';
 import { CRUNCH, EXPANSE, FREEZE, HALL } from './content';
 import { loadSamples } from './samples';
 import type { LoopDraw, SoundDraw } from './traits';
 
 /**
+ * The gestures a browser lets start audio. A phone trusts a touch only once it lifts, so a press alone won't do
+ * there.
+ */
+const GESTURES = ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'] as const;
+
+/**
  * The scene's sound: console-era samples through a modern mix. Browsers hold audio until a gesture, so the first
- * press or key in the page starts it, and nothing cued before then plays late. M mutes it.
+ * press, tap, or key in the page starts it, even while the samples are still baking, and nothing cued before then
+ * plays late. M mutes it.
  */
 export function SoundRenderer() {
   const world = useWorld();
-  const samples = use(loadSamples());
+  const [context, setContext] = useState<AudioContext>();
 
   useEffect(() => {
+    // An iPhone plays the page as media, as it would a film, rather than as sound effects its silent switch mutes.
+    const session = (navigator as Navigator & { audioSession?: { type: string } }).audioSession;
+
+    if (session !== undefined) session.type = 'playback';
+
     const context = new AudioContext({ latencyHint: 'interactive' });
     const actions = soundActions(world);
-    let view: SoundDraw;
 
-    try {
-      view = mix(context, samples);
-    } catch (error) {
-      void context.close();
-      throw error;
-    }
-
-    actions.mountSoundView(view);
-
-    // Some browsers let audio start on its own; the rest wait for the unlock below.
+    // Some browsers let audio start on its own; the rest wait for the unlock below. A phone can also suspend it
+    // again, as for a call, so any later gesture starts it once more.
     const running = () => {
       if (context.state === 'running') actions.unlockSound();
     };
     const unlock = () => {
-      if (context.state === 'suspended') void context.resume();
+      if (context.state === 'running' || context.state === 'closed') return;
+
+      void context.resume();
+      // Older iPhones start a context only once a sound has started inside the gesture, so start a silent one.
+      const nudge = context.createBufferSource();
+      nudge.buffer = context.createBuffer(1, 1, context.sampleRate);
+      nudge.connect(context.destination);
+      nudge.start();
     };
 
     running();
@@ -41,19 +51,47 @@ export function SoundRenderer() {
       if (event.key === 'm' || event.key === 'M') actions.toggleSound();
     };
 
-    window.addEventListener('pointerdown', unlock, true);
-    window.addEventListener('keydown', unlock, true);
+    for (const gesture of GESTURES) window.addEventListener(gesture, unlock, true);
+
     window.addEventListener('keydown', key);
+    setContext(context);
 
     return () => {
-      actions.unmountSoundView();
       context.removeEventListener('statechange', running);
-      window.removeEventListener('pointerdown', unlock, true);
-      window.removeEventListener('keydown', unlock, true);
+
+      for (const gesture of GESTURES) window.removeEventListener(gesture, unlock, true);
+
       window.removeEventListener('keydown', key);
       void context.close();
     };
-  }, [world, samples]);
+  }, [world]);
+
+  // The scene never waits on its sound: the samples bake beside it and join when they are ready.
+  return context === undefined ? null : (
+    <Suspense fallback={null}>
+      <Mixer context={context} />
+    </Suspense>
+  );
+}
+
+/** The mix, once its samples are baked, mounted on the page's audio. */
+function Mixer({ context }: { readonly context: AudioContext }) {
+  const world = useWorld();
+  const samples = use(loadSamples());
+
+  useEffect(() => {
+    const actions = soundActions(world);
+    const view = mix(context, samples);
+    actions.mountSoundView(view);
+
+    return () => {
+      actions.unmountSoundView();
+      view.master.disconnect();
+
+      for (const voice of [view.drone, view.tritone, view.riser, view.strain, view.organ])
+        voice.source.stop();
+    };
+  }, [world, context, samples]);
 
   return null;
 }

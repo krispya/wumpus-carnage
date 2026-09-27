@@ -1,0 +1,26 @@
+diff --git a/dist/chunk-ZWIGMIL4.js b/dist/chunk-ZWIGMIL4.js
+index feb90a85391fc5c3708a46041893e9dda4c8ff47..c404bac05bbd4402e419b60e29fd48872fcaca31 100644
+--- a/dist/chunk-ZWIGMIL4.js
++++ b/dist/chunk-ZWIGMIL4.js
+@@ -2332,7 +2332,7 @@ function createQueryInstance(world, parameters) {
+           if (!mask) continue;
+           const oldMask = snapshot[genId]?.[eid] || 0;
+           const currentMask = ctx.entityMasks[genId]?.[eid] || 0;
+-          for (let bit = 1; bit <= mask; bit <<= 1) {
++          for (let bit = 1; bit > 0 && bit <= mask; bit <<= 1) {
+             if (!(mask & bit)) continue;
+             let traitMatches = false;
+             switch (type) {
+diff --git a/dist/index.cjs b/dist/index.cjs
+index efa87da67fac554c98a6717b5670ad565ab615ba..e06c290d0a621d52782121577e32855cff686b4e 100644
+--- a/dist/index.cjs
++++ b/dist/index.cjs
+@@ -2378,7 +2378,7 @@ function createQueryInstance(world, parameters) {
+           if (!mask) continue;
+           const oldMask = snapshot[genId]?.[eid] || 0;
+           const currentMask = ctx.entityMasks[genId]?.[eid] || 0;
+-          for (let bit = 1; bit <= mask; bit <<= 1) {
++          for (let bit = 1; bit > 0 && bit <= mask; bit <<= 1) {
+             if (!(mask & bit)) continue;
+             let traitMatches = false;
+             switch (type) {

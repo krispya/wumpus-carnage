@@ -45,6 +45,8 @@ plain functions over the world, and React only mounts scene objects and register
     lighting, and bloom, vignette, grain, and dither
 - `assets/` holds the model, sounds, and insert image. Original WAVs stay beside the MP3 copies used by the app;
   Vite ships only the imported copies. The model uses 16-bit mesh indices without changing its geometry.
+- `patches/` fixes Koota 0.6.6's added, removed, and changed queries, which loop forever when the trait they track
+  is the 31st a world registers.
 
 ## Libraries
 

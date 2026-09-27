@@ -40,10 +40,7 @@ export function App() {
           <Scene />
         </Suspense>
       </Canvas>
-      {/* The scene never waits on its sound: the samples bake beside it and join when they are ready. */}
-      <Suspense fallback={null}>
-        <SoundRenderer />
-      </Suspense>
+      <SoundRenderer />
       <StartButton />
     </WorldProvider>
   );
