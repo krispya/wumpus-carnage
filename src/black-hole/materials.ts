@@ -139,11 +139,10 @@ function least(
  * Trace the frame through the hole. There is nothing round it to shine: it is only a hole, and what it does is bend
  * the light of everything behind it. Each pixel's ray is followed back from the camera past it, bent as light is:
  * rays that come too close fall in, leaving its shadow, and the rest escape to show whatever they meet. That is
- * found in the backdrop, the sky and additive effects drawn without the foreground. They leave depth at the far
- * plane, where escaped rays land, dragged round the hole the closer they pass. If a ray leaves the frame, bent
- * wide it meets the sky, and only nudged, about what the frame shows at its edge. What lies beside the hole or
- * nearer is left as it was, drawn over
- * the bent light, to fall into it in its own light. A camera falling in sees the sky swept forward by its own speed,
+ * found in the backdrop, the sky and additive effects drawn without the foreground. Escaped directions project
+ * into that image after being dragged round the hole. Rays leaving its edges fade into the sky. What lies beside
+ * the hole or nearer is drawn over the bent light, to fall into it in its own light. A camera falling in sees the
+ * sky swept forward by its own speed,
  * so the hole ahead looks smaller than it is and the whole universe crowds round it in a ring, brighter the faster
  * it falls, and once it has fallen past the horizon there is nothing left to see.
  */
@@ -231,19 +230,17 @@ export function throughHole(
         const seen = vec3(0).toVar();
 
         If(visibility.greaterThan(0.0001), () => {
-          const toward = dot(away, forward);
           const drag = uSwirl
             .mul(LENS.drag)
             .div(passing.mul(passing).add(1))
             .mul(smoothstep(LENS.reach, LENS.reach * 0.5, passing));
 
-          // The sky is seen by direction alone, projected from the camera onto the backdrop's far plane.
-          const point = uCameraPosition.add(away.mul(uCameraClip.y.div(toward.max(1e-3))));
+          // Project the escaped direction after the swirl, including whether it still faces the source camera.
           const dragged = drag.mul(clamp(uCameraClip.y.sub(holeDepth).div(LENS.dragDepth), 0, 1));
-          const clip = uCameraViewProjection.mul(
-            vec4(uHoleCentre.add(turned(point.sub(uHoleCentre), axis, dragged)), 1)
-          );
-          const landing = clip.xy.div(clip.w).mul(vec2(0.5, -0.5)).add(0.5).toVar();
+          const direction = turned(away, axis, dragged);
+          const toward = dot(direction, forward);
+          const clip = uCameraViewProjection.mul(vec4(direction, 0));
+          const landing = clip.xy.div(clip.w.max(1e-4)).mul(vec2(0.5, -0.5)).add(0.5).toVar();
 
           // The backdrop has no depth-writing surfaces, so an escaped ray meets its far plane directly.
           const target = vec2(0).toVar();
@@ -263,15 +260,20 @@ export function throughHole(
           const framed = smoothstep(0, 0.03, edge).mul(met);
           seen.assign(backdrop.sample(target).rgb);
 
-          // Where it left the frame, bent wide round the shadow, the sky is what it meets. Only nudged, about what
-          // the frame shows at its edge where it left.
+          // Extend the edge only a little before fading to the sky, so an offscreen image cannot stretch into a wall.
           If(framed.lessThan(0.999), () => {
             const [nudged, wide] = LENS.leaving;
-            const beyond = mix(
-              backdrop.sample(landing.clamp(0, 1)).rgb,
-              skyAt(turned(away, axis, drag)),
-              smoothstep(nudged, wide, length(away.sub(ray)))
-            );
+            const outside = least(
+              landing.x,
+              landing.x.oneMinus(),
+              landing.y,
+              landing.y.oneMinus()
+            ).negate();
+            const extended = smoothstep(0, 0.06, outside)
+              .oneMinus()
+              .mul(smoothstep(0.02, 0.08, toward))
+              .mul(smoothstep(nudged, wide, length(away.sub(ray))).oneMinus());
+            const beyond = mix(skyAt(direction), backdrop.sample(landing.clamp(0, 1)).rgb, extended);
             seen.assign(mix(beyond, seen, framed));
           });
         });

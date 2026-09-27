@@ -2,11 +2,13 @@ import {
   abs,
   atan,
   cos,
+  dot,
   fwidth,
   Fn,
   sin,
   cameraPosition,
   cameraProjectionMatrix,
+  cameraWorldMatrix,
   cross,
   exp,
   instancedBufferAttribute,
@@ -17,15 +19,18 @@ import {
   normalize,
   positionGeometry,
   positionView,
+  positionWorld,
   select,
   screenSize,
   smoothstep,
+  sqrt,
   uv,
   vec3,
   vec4,
 } from 'three/tsl';
 import {
   CustomBlending,
+  BackSide,
   DoubleSide,
   type InstancedBufferAttribute,
   MeshBasicNodeMaterial,
@@ -57,7 +62,7 @@ function glowMaterial(name: string): MeshBasicNodeMaterial {
     depthWrite: false,
     side: DoubleSide,
     transparent: true,
-    // Each effect is a flat quad, so drawing its two sides separately adds no visible surface.
+    // Billboard effects need both sides in a single draw.
     forceSinglePass: true,
   });
   material.name = name;
@@ -158,7 +163,7 @@ export function flareMaterial(
   return material;
 }
 
-/** A flash and shock front break into hot, torn plasma that cools and thins as it expands. */
+/** Fire and torn plasma projected onto a shell, so the camera can turn through it without exposing a flat card. */
 export function blastMaterial(
   centreAttribute: InstancedBufferAttribute,
   stateAttribute: InstancedBufferAttribute
@@ -168,28 +173,36 @@ export function blastMaterial(
   const state = instancedBufferAttribute<'vec3'>(stateAttribute, 'vec3');
   const color = (name: keyof typeof BLAST.colors) => vec3(...BLAST.colors[name]);
 
-  const toCamera = normalize(cameraPosition.sub(centre.xyz));
-  const right = normalize(cross(vec3(0, 1, 0), toCamera));
-  const up = cross(toCamera, right);
   const reach = 1.35;
-  const size = centre.w.mul(reach * 2);
-  material.positionNode = centre.xyz
-    .add(right.mul(positionGeometry.x.mul(size)))
-    .add(up.mul(positionGeometry.y.mul(size)));
+  // The far side covers the effect both outside and inside, with only one surface shaded per pixel.
+  material.side = BackSide;
+  material.positionNode = centre.xyz.add(positionGeometry.mul(centre.w.mul(reach)));
 
-  // Across the disc in fireball radii, and how long it has burned.
-  const at = uv()
-    .sub(0.5)
-    .mul(reach * 2);
-  const out = length(at);
   const age = state.x;
   const grown = exp(age.mul(-1.8)).oneMinus().mul(0.9).add(0.035);
-  const flow = at.div(grown);
-  const angle = atan(at.y, at.x.add(1e-5));
+  const ray = normalize(positionWorld.sub(cameraPosition));
+  const origin = cameraPosition.sub(centre.xyz).div(centre.w);
+  const along = dot(origin, ray);
+  const impact = dot(origin, origin).sub(along.mul(along)).max(0);
+  const out = sqrt(impact);
+  // One analytic intersection anchors the noise in space as the view crosses the fireball.
+  const halfChord = sqrt(grown.mul(grown).sub(impact).max(0));
+  const exit = along.negate().add(halfChord);
+  const thickness = exit.sub(along.negate().sub(halfChord).max(0)).max(0);
+  const flow = origin.add(ray.mul(exit)).div(grown);
+  const angle = atan(flow.y, flow.x.add(1e-5));
   // Two shared noise fields shape the fire's edge and its hot folds.
-  const boil = mx_fractal_noise_float(vec3(flow.mul(3.2), age.mul(0.3).add(state.y)), 3, 2, 0.5);
+  const boil = mx_fractal_noise_float(
+    flow.mul(3.2).add(vec3(0, 0, age.mul(0.3).add(state.y))),
+    3,
+    2,
+    0.5
+  );
   const detail = mx_fractal_noise_float(
-    vec3(flow.mul(26).sub(at.div(out.max(0.02)).mul(age.mul(0.7))), age.mul(0.42).add(state.y)),
+    flow
+      .mul(26)
+      .sub(normalize(flow).mul(age.mul(0.7)))
+      .add(vec3(0, 0, age.mul(0.42).add(state.y))),
     3,
     2,
     0.5
@@ -224,6 +237,7 @@ export function blastMaterial(
         .mul(2.5)
     )
     .mul(body)
+    .mul(smoothstep(0, 0.3, thickness))
     .mul(fuel)
     .mul(heat.mul(3.8))
     .mul(state.z);
@@ -242,7 +256,11 @@ export function blastMaterial(
     .mul(exp(age.mul(-2.4)))
     .mul(6);
   const edge = smoothstep(reach, reach * 0.88, out);
-  material.colorNode = fire.add(flash).add(ring).mul(edge);
+  // Thin the remnant as the shot turns away, before the lens stretches its last visible edge across the frame.
+  const forward = cameraWorldMatrix.mul(vec4(0, 0, -1, 0)).xyz;
+  const facing = dot(normalize(centre.xyz.sub(cameraPosition)), forward);
+  const viewing = mix(1, smoothstep(0.35, 0.95, facing), smoothstep(4, 8, age));
+  material.colorNode = fire.add(flash).add(ring).mul(edge).mul(viewing);
 
   // Its light adds up, and how far off it is, which is kept as it is, tells the frame what stands in front of it.
   material.premultipliedAlpha = false;

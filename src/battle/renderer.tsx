@@ -1,6 +1,12 @@
 import { useActions } from 'koota/react';
 import { useEffect, useLayoutEffect, useMemo } from 'react';
-import { InstancedBufferAttribute, InstancedMesh, PlaneGeometry, PointLight } from 'three/webgpu';
+import {
+  InstancedBufferAttribute,
+  InstancedMesh,
+  PlaneGeometry,
+  PointLight,
+  SphereGeometry,
+} from 'three/webgpu';
 import { battleActions } from './actions';
 import { BLAST, BLAST_CAPACITY, BLAST_LAYER, BOLT_CAPACITY, FLARE_CAPACITY } from './content';
 import { blastMaterial, boltMaterial, flareMaterial } from './materials';
@@ -36,7 +42,11 @@ function createBattleDraw(): BattleDraw {
   );
   const blastCentre = buffer(BLAST_CAPACITY, 4);
   const blastState = buffer(BLAST_CAPACITY, 3);
-  const blasts = new InstancedMesh(quad, blastMaterial(blastCentre, blastState), BLAST_CAPACITY);
+  const blasts = new InstancedMesh(
+    new SphereGeometry(1, 24, 16),
+    blastMaterial(blastCentre, blastState),
+    BLAST_CAPACITY
+  );
 
   for (const mesh of [bolts, flares, blasts]) {
     mesh.count = 0;
@@ -81,6 +91,7 @@ export function BattleRenderer() {
   useEffect(
     () => () => {
       view.bolts.geometry.dispose();
+      view.blasts.geometry.dispose();
       view.bolts.dispose();
       view.flares.dispose();
       view.blasts.dispose();
