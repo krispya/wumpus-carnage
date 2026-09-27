@@ -1,5 +1,5 @@
 import {
-  Break,
+  acos,
   clamp,
   cos,
   cross,
@@ -8,7 +8,6 @@ import {
   Fn,
   If,
   length,
-  Loop,
   max,
   min,
   mix,
@@ -18,7 +17,6 @@ import {
   perspectiveDepthToViewZ,
   positionWorld,
   screenSize,
-  select,
   sin,
   smoothstep,
   sqrt,
@@ -39,6 +37,7 @@ import {
 import { retained } from '../utils';
 import { skyAt } from '../void/materials';
 import { HOLE, LENS, SHADOW, SPIN_AXIS } from './content';
+import { bend, rayTable } from './rays';
 
 /**
  * The camera the backdrop is shot through: the frame's own, copied each frame, but blind to the foreground, so the
@@ -118,19 +117,6 @@ function turned(vector: Node<'vec3'>, axis: Node<'vec3'>, angle: Node<'float'>):
     .add(axis.mul(dot(axis, vector)).mul(cos(angle).oneMinus()));
 }
 
-/**
- * How much a ray passing a hole `impact` horizon radii from it at its closest has been bent toward it by the time it
- * is `along` horizon radii past that point, in radians, counted from the middle of its passing: it runs from minus
- * the reciprocal of `impact` far before to plus it far after, twice that in all, as light passing a mass bends.
- */
-function bend(along: Node<'float'>, impact: Node<'float'>): Node<'float'> {
-  const square = impact.mul(impact);
-
-  return along
-    .mul(along.mul(along).mul(2).add(square.mul(3)))
-    .div(impact.mul(2).mul(square.add(along.mul(along)).pow(1.5)));
-}
-
 /** The least of four values. */
 function least(
   a: Node<'float'>,
@@ -158,6 +144,9 @@ export function throughHole(
   depth: TextureNode,
   backdrop: TextureNode
 ): Node<'vec3'> {
+  const radius = length(uCameraPosition.sub(uHoleCentre)).div(uHoleRadius.max(1e-4));
+  const tracedRay = rayTable(radius, uHoleRadius.greaterThan(1e-4).and(uInside.lessThanEqual(0.5)));
+
   return Fn((builder) => {
     const foreground = lit.sample(uv()).toVar();
     const result = foreground.rgb.toVar();
@@ -209,79 +198,28 @@ export function throughHole(
       const past = foreground.a.mul(keep).oneMinus();
 
       If(past.greaterThan(0.001), () => {
-        const reach = float(LENS.reach);
-        const p = origin.toVar();
+        const axis = normalize(origin);
         const away = ray.toVar();
-        const escaped = float(0).toVar();
-        // How close the ray came to the hole before it turned back out, if it came in at all.
-        const periapsis = float(1e3).toVar();
+        const visibility = float(1).toVar();
 
         If(
-          passing.lessThan(reach).and(length(origin).lessThanEqual(reach).or(along.lessThan(0))),
+          passing.lessThan(LENS.reach).and(radius.lessThanEqual(LENS.reach).or(along.lessThan(0))),
           () => {
-            // Near the hole the ray is followed step by step. Out to the edge of its reach it runs nearly straight,
-            // bent only by what it gathers on the way in, which is added whole.
-            const v = ray.toVar();
-
-            If(length(origin).greaterThan(reach), () => {
-              const entry = sqrt(reach.mul(reach).sub(passing.mul(passing))).negate();
-              p.assign(closest.add(ray.mul(entry)));
-              v.assign(
-                normalize(ray.add(inward.mul(bend(entry, passing).sub(bend(along, passing)))))
-              );
-            });
-
-            // Radial acceleration conserves angular momentum throughout the trace.
-            const angular = cross(p, v).toVar();
-            const momentum = dot(angular, angular).mul(-1.5).toVar();
-            const incoming = dot(p, v).lessThan(0);
-            const lowest = float(1e3).toVar();
-
-            Loop(LENS.steps, () => {
-              const square = dot(p, p).toVar();
-              const radius = sqrt(square).toVar();
-              lowest.assign(min(lowest, radius));
-
-              If(radius.lessThan(1), () => {
-                Break();
-              });
-
-              If(radius.greaterThan(reach).and(dot(p, v).greaterThan(0)), () => {
-                escaped.assign(1);
-                Break();
-              });
-
-              const step = clamp(radius.mul(0.09), 0.03, 2);
-              v.addAssign(p.mul(momentum.div(square.mul(square).mul(radius))).mul(step));
-              p.addAssign(v.mul(step));
-            });
-
-            periapsis.assign(select(incoming, lowest, float(1e3)));
-
-            // What little it would still gather on the way out is added whole too, so rays let go a step apart
-            // still leave together, and lasers bent round the hole stay straight-edged.
-            const going = normalize(v);
-            const out = dot(p, going);
-            const impact = length(cross(p, going)).max(1e-4);
-            const outward = normalize(p.sub(going.mul(out))).negate();
-            away.assign(
-              normalize(going.add(outward.mul(impact.reciprocal().sub(bend(out, impact)))))
-            );
+            const radial = dot(ray, axis);
+            const traced = tracedRay(acos(clamp(radial.negate(), -1, 1))).toVar();
+            const tangent = normalize(ray.sub(axis.mul(radial)).add(vec3(1e-8, 0, 0)));
+            visibility.assign(traced.z);
+            away.assign(normalize(tangent.mul(traced.x).add(axis.mul(traced.y))));
           }
         ).Else(() => {
-          // Further out the ray runs so nearly straight that it is bent whole where it passes the hole closest,
-          // by all it gathers from the camera on out: little, but never nothing, so even a pinprick bends the frame.
-          escaped.assign(1);
-          p.assign(select(along.lessThan(0), closest, origin));
           away.assign(normalize(ray.add(inward.mul(passing.reciprocal().sub(bend(along, passing))))));
         });
 
         // A ray that neither escaped nor fell has circled the hole too long to follow, and is lost to it.
         const seen = vec3(0).toVar();
 
-        If(escaped.greaterThan(0.5), () => {
+        If(visibility.greaterThan(0.0001), () => {
           const toward = dot(away, forward);
-          const axis = normalize(origin);
           const drag = uSwirl
             .mul(LENS.drag)
             .div(passing.mul(passing).add(1))
@@ -326,11 +264,8 @@ export function throughHole(
           });
         });
 
-        // Light that has skimmed the photon sphere, circling the hole before it turned back out, is bent too wildly
-        // to follow from pixel to pixel, and would sparkle. It is let fade, so the shadow's edge is clean.
-        const skimmed = smoothstep(1.5, 1.5 + LENS.skim, periapsis);
         // Resolved RGB already includes coverage. Apply it only once, then fill the uncovered part with the lens.
-        result.assign(foreground.rgb.mul(keep).add(seen.mul(skimmed).mul(past)).mul(boost));
+        result.assign(foreground.rgb.mul(keep).add(seen.mul(visibility).mul(past)).mul(boost));
       });
     });
 

@@ -28,6 +28,8 @@ export function syncTransformViews(world: World): void {
     view!.position.fromArray(transform.position);
     view!.quaternion.fromArray(transform.rotation);
     view!.scale.setScalar(transform.scale);
+    // A vanished body has no surface to draw, including through its deformation shaders.
+    view!.visible = transform.scale !== 0;
   });
 
   world.query(Offset, TransformView).readEach(([offset, view]) => {
