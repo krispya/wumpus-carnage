@@ -31,6 +31,7 @@ import {
 } from 'three/tsl';
 import { Color, type Node, Vector3 } from 'three/webgpu';
 import { BEAMS, ECLIPSE, NEBULA, SKY, STARS, SUN } from './content';
+import { nebulaAt } from './nebula';
 
 /** A colour as linear light, from its sRGB hex. */
 function rgb(hex: string) {
@@ -169,24 +170,11 @@ function eclipseAt(direction: Node<'vec3'>) {
  * up the sky this way, such as a ray a black hole has bent.
  */
 export function skyAt(direction: Node<'vec3'>) {
-  // The nebula. Its height above its edge is roughened by noise into cloud, lit most along the edge, and cut sharply
-  // below it, where the dust begins.
-  const [nx, ny, nz] = NEBULA.normal;
-  const normalLength = Math.hypot(nx, ny, nz);
-  const roughness = mx_fractal_noise_float(direction.mul(NEBULA.warpScale), 4, 2, 0.5);
-  const height = dot(direction, vec3(nx / normalLength, ny / normalLength, nz / normalLength)).add(
-    roughness.mul(NEBULA.warp)
-  );
-  const smoke = smoothstep(
-    -0.4,
-    0.5,
-    mx_fractal_noise_float(direction.mul(NEBULA.smokeScale).add(roughness), 5, 2, 0.55)
-  );
-  const stretch = smoothstep(
-    -0.6,
-    0.3,
-    mx_fractal_noise_float(direction.mul(NEBULA.stretchScale), 2)
-  );
+  const fields = nebulaAt(direction);
+  const height = fields.x;
+  const smoke = fields.y;
+  const stretch = fields.z;
+  const billow = fields.w;
   const rim = exp(max(height, 0).div(NEBULA.rim).negate());
   const cloud = smoothstep(-0.02, 0.006, height)
     .mul(smoothstep(0, NEBULA.depth, height).oneMinus())
@@ -194,12 +182,6 @@ export function skyAt(direction: Node<'vec3'>) {
     .mul(stretch)
     .mul(rim.mul(0.6).add(0.4));
   const dust = smoothstep(-0.06, 0, height).oneMinus();
-  const billow = mx_fractal_noise_float(
-    direction.mul(NEBULA.haze.scale).add(roughness.mul(0.5)),
-    4,
-    2,
-    0.5
-  );
   const haze = smoothstep(-0.15, 0.6, billow)
     .mul(exp(abs(height).div(NEBULA.haze.reach).negate()))
     .mul(NEBULA.haze.strength);

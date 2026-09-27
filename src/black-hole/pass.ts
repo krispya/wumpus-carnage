@@ -1,19 +1,37 @@
-import { type Camera, type NodeFrame, type Object3D, PassNode } from 'three/webgpu';
+import { type Camera, type NodeFrame, type Object3D, PassNode, type Scene } from 'three/webgpu';
 import { backdropCamera, holeUniforms } from './materials';
 
-/** Keep the scene ready for replay, but stop rendering it while the horizon hides it completely. */
+/** During lensing, draw only the opaque foreground. The backdrop supplies the sky and additive effects. */
 export class ShotPass extends PassNode {
   private warmed = false;
 
-  constructor(scene: Object3D, camera: Camera) {
-    super(PassNode.COLOR, scene, camera, { samples: 4 });
+  constructor(scene: Scene, camera: Camera) {
+    // Keep resolved color and multisampled depth for lensing, discarding the unused color samples.
+    super(PassNode.COLOR, scene, camera, { samples: 4, storeMultisampledColorBuffer: false });
     this.name = 'shot';
   }
 
   override updateBefore(frame: NodeFrame): undefined {
     if (this.warmed && holeUniforms.uInside.value > 0.5) return;
 
-    super.updateBefore(frame);
+    const scene = this.scene as Scene;
+    const background = scene.background;
+    const backgroundNode = scene.backgroundNode;
+    const lensing = holeUniforms.uHoleRadius.value > 1e-4;
+    this.transparent = !lensing;
+
+    try {
+      if (lensing) {
+        scene.background = null;
+        scene.backgroundNode = null;
+      }
+
+      super.updateBefore(frame);
+    } finally {
+      scene.background = background;
+      scene.backgroundNode = backgroundNode;
+    }
+
     this.warmed = true;
   }
 }

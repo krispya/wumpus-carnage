@@ -75,7 +75,10 @@ function Post() {
         shot.getTextureNode('output'),
         shot.getTextureNode('depth'),
         backdrop.getTextureNode('output')
-      )
+      ),
+      null,
+      null,
+      { depthBuffer: false }
     );
     const glow = bloom(bent, BLOOM.strength, BLOOM.radius, BLOOM.threshold);
     // Half the frame's resolution carries a glow. Any less and thin lasers alias into dashes under it.
