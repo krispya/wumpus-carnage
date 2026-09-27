@@ -1,0 +1,11 @@
+Model Information:
+* title:	Wumpus
+* source:	https://sketchfab.com/3d-models/wumpus-6f78088e749345358a3854b8fc98403d
+* author:	酷樂家族 (https://sketchfab.com/HomelineDoki.tw)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Wumpus" (https://sketchfab.com/3d-models/wumpus-6f78088e749345358a3854b8fc98403d) by 酷樂家族 (https://sketchfab.com/HomelineDoki.tw) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
