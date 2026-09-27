@@ -152,6 +152,9 @@ export function syncBlackHoleView(world: World): void {
   camera.updateMatrixWorld();
   backdropCamera.copy(camera, false);
   backdropCamera.layers.set(0);
+  // Bent rays need a wider source than the visible portrait frame, especially beside the hole.
+  backdropCamera.aspect = Math.max(camera.aspect, LENS.backdropAspect);
+  backdropCamera.updateProjectionMatrix();
   const found = world.queryFirst(BlackHole, Transform);
   uniforms.uDread.value = world.get(Dread)!.level;
 
@@ -177,9 +180,10 @@ export function syncBlackHoleView(world: World): void {
   uniforms.uCameraPosition.value.copy(camera.position);
   uniforms.uCameraWorld.value.copy(camera.matrixWorld);
   uniforms.uCameraProjectionInverse.value.copy(camera.projectionMatrixInverse);
+  // Escaped rays land in the wider backdrop, while their starting rays still use the visible camera.
   uniforms.uCameraViewProjection.value.multiplyMatrices(
-    camera.projectionMatrix,
-    camera.matrixWorldInverse
+    backdropCamera.projectionMatrix,
+    backdropCamera.matrixWorldInverse
   );
   uniforms.uCameraClip.value.set(camera.near, camera.far);
   uniforms.uInfall.value = world.get(Shot)?.speed ?? 0;

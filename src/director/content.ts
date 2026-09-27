@@ -74,16 +74,36 @@ function before(toward: Vec3, from: Vec3, distance: number): Vec3 {
 }
 
 /**
- * The wide, composed on thirds: through a lens `fov` degrees tall on a 16:9 frame, the eclipsed star sits on the
- * upper right third and the blast on the lower left one, the diagonal between them balancing the frame, with the
- * dust running under the blast. The camera stands far enough back from the blast that it fills a good part of its
- * third.
+ * The wide, composed on thirds: the eclipsed star sits on the upper right third and the blast on the lower left
+ * one, with the dust running under the blast. Recompose the camera for the frame's aspect so both subjects stay
+ * visible in portrait. The camera stands far enough back from the blast that it fills a good part of its third.
  */
 const WIDE = { fov: 46, aspect: 16 / 9, distance: 700 };
 const thirdHigh = Math.atan(Math.tan((WIDE.fov * Math.PI) / 360) / 3);
-const thirdAcross = Math.atan((Math.tan((WIDE.fov * Math.PI) / 360) * WIDE.aspect) / 3);
-const wideAim = turnedFrom(sun, -thirdAcross, -thirdHigh);
-const systemFrom = before(turnedFrom(wideAim, -thirdAcross, -thirdHigh), BLAST_AT, WIDE.distance);
+let lastOpening: { aspect: number; shot: Still } | undefined;
+
+export function openingShot(aspect: number): Still {
+  if (lastOpening?.aspect === aspect) return lastOpening.shot;
+
+  // Keep some of the wide's diagonal spread in portrait while bringing the star back inside the frame.
+  const framingAspect = WIDE.aspect + (Math.min(aspect, WIDE.aspect) - WIDE.aspect) * 0.8;
+  const thirdAcross = Math.atan((Math.tan((WIDE.fov * Math.PI) / 360) * framingAspect) / 3);
+  const wideAim = turnedFrom(sun, -thirdAcross, -thirdHigh);
+  const systemFrom = before(turnedFrom(wideAim, -thirdAcross, -thirdHigh), BLAST_AT, WIDE.distance);
+
+  const shot: Still = {
+    kind: 'still',
+    anchor: 'world',
+    position: systemFrom,
+    target: vec3.scaleAndAdd(vec3.create(), systemFrom, wideAim, 1000),
+    fov: WIDE.fov,
+    roll: 0,
+  };
+
+  lastOpening = { aspect, shot };
+
+  return shot;
+}
 
 /**
  * Every shot.
@@ -95,14 +115,7 @@ const systemFrom = before(turnedFrom(wideAim, -thirdAcross, -thirdHigh), BLAST_A
  *   `FLIGHT_SHOT`.
  */
 export const SHOTS: Record<ShotName, Still | Flight> = {
-  system: {
-    kind: 'still',
-    anchor: 'world',
-    position: systemFrom,
-    target: vec3.scaleAndAdd(vec3.create(), systemFrom, wideAim, 1000),
-    fov: WIDE.fov,
-    roll: 0,
-  },
+  system: openingShot(WIDE.aspect),
   flight: { kind: 'flight' },
 };
 

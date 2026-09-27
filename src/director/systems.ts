@@ -8,6 +8,7 @@ import { Spin } from '../motion/traits';
 import { sequenceActions } from '../sequence/actions';
 import { Time } from '../time/traits';
 import { Transform } from '../transform/traits';
+import { Viewport } from '../viewport/traits';
 import { Wumpus } from '../wumpus/traits';
 import {
   BEATS,
@@ -19,6 +20,7 @@ import {
   INFALL,
   INSERT,
   SHOTS,
+  openingShot,
 } from './content';
 import { insertUniforms } from './materials';
 import { Curtain, Framing, Insert, Shot, ShotView } from './traits';
@@ -69,7 +71,8 @@ export function frameShot(world: World): void {
   const framing = world.get(Framing)!;
   const { delta } = world.get(Time)!;
   const age = framing.age + delta;
-  const plan = SHOTS[framing.shot];
+  const aspect = world.get(Viewport)!.aspect;
+  const plan = framing.shot === 'system' ? openingShot(aspect) : SHOTS[framing.shot];
   const shot = world.get(Shot)!;
 
   if (plan.kind === 'still') {
@@ -174,6 +177,7 @@ function flightShot(
   turn: number
 ): void {
   const { frenzy, settle, fixate, plunge, chase, back, suck } = FLIGHT_SHOT;
+  const portrait = clamp((1.1 - world.get(Viewport)!.aspect) / 0.45, 0, 1);
   const { elapsed } = world.get(Time)!;
   const shot = world.get(Shot)!;
   const wumpus = world.queryFirst(Wumpus, Transform);
@@ -201,7 +205,7 @@ function flightShot(
   vec3.scaleAndAdd(stand, stand, FLIGHT.along, settle.ahead);
   vec3.scaleAndAdd(stand, stand, FLIGHT.across, settle.across);
   vec3.scaleAndAdd(stand, stand, FLIGHT.lifted, settle.up);
-  between(aim, stand, at, hole, settle.focus);
+  between(aim, stand, at, hole, lerp(settle.focus, 1, portrait));
   const fixing = clamp((age - frenzy.seconds - settle.seconds) / fixate.seconds, 0, 1);
   const fixedFov = lerp(settle.fov, fixate.fov, easing.sineInOut(fixing));
 

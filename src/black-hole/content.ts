@@ -25,9 +25,12 @@ export const FOREGROUND = 1;
  * fully. A ray that leaves the frame shows what the frame shows at its edge if it was bent less than `leaving[0]`
  * radians, and the sky if more than `leaving[1]`.
  * Light climbing out from near the horizon reddens and dims, and is gone by `redshift[0]` horizon radii and clear by
- * `redshift[1]`. Light a falling camera races into is brightened, by at most `boost` times.
+ * `redshift[1]`. Light a falling camera races into is brightened, by at most `boost` times. The
+ * backdrop covers at least `backdropAspect` horizontally, so bent rays can still find the scene
+ * beyond a narrow visible frame.
  */
 export const LENS = {
+  backdropAspect: 1.5,
   reach: 16,
   steps: 120,
   depths: 14,
