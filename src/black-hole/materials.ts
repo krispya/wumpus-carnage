@@ -158,12 +158,9 @@ export function throughHole(
   depth: TextureNode,
   backdrop: TextureNode
 ): Node<'vec3'> {
-  /** How far ahead of the camera the foreground lies at `at` on screen. */
-  const distanceAt = (at: Node<'vec2'>) =>
-    perspectiveDepthToViewZ(depth.sample(at).x, uCameraClip.x, uCameraClip.y).negate();
-
-  return Fn(() => {
-    const result = lit.sample(uv()).rgb.toVar();
+  return Fn((builder) => {
+    const foreground = lit.sample(uv()).toVar();
+    const result = foreground.rgb.toVar();
 
     If(uInside.greaterThan(0.5), () => {
       result.assign(vec3(0));
@@ -195,7 +192,21 @@ export function throughHole(
       const holeDepth = length(uHoleCentre.sub(uCameraPosition));
       const [beside, behind] = LENS.beside;
       const nearest = holeDepth.add(beside);
-      const past = smoothstep(nearest, holeDepth.add(behind), distanceAt(uv()));
+      const surface = depth.sample(uv()).x.toVar();
+
+      if ('isWebGPUBackend' in builder.renderer.backend) {
+        // A silhouette pixel can miss the body in sample zero. Find its nearest covered depth.
+        If(foreground.a.greaterThan(0).and(foreground.a.lessThan(1)), () => {
+          const pixel = uv().mul(screenSize);
+          for (let sample = 1; sample < 4; sample++) {
+            surface.assign(min(surface, depth.load(pixel).level(float(sample)).x));
+          }
+        });
+      }
+
+      const distance = perspectiveDepthToViewZ(surface, uCameraClip.x, uCameraClip.y).negate();
+      const keep = smoothstep(nearest, holeDepth.add(behind), distance).oneMinus();
+      const past = foreground.a.mul(keep).oneMinus();
 
       If(past.greaterThan(0.001), () => {
         const reach = float(LENS.reach);
@@ -318,7 +329,8 @@ export function throughHole(
         // Light that has skimmed the photon sphere, circling the hole before it turned back out, is bent too wildly
         // to follow from pixel to pixel, and would sparkle. It is let fade, so the shadow's edge is clean.
         const skimmed = smoothstep(1.5, 1.5 + LENS.skim, periapsis);
-        result.assign(mix(result, seen.mul(skimmed), past).mul(boost));
+        // Resolved RGB already includes coverage. Apply it only once, then fill the uncovered part with the lens.
+        result.assign(foreground.rgb.mul(keep).add(seen.mul(skimmed).mul(past)).mul(boost));
       });
     });
 

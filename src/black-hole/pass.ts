@@ -17,6 +17,8 @@ export class ShotPass extends PassNode {
     const scene = this.scene as Scene;
     const background = scene.background;
     const backgroundNode = scene.backgroundNode;
+    const renderer = frame.renderer!;
+    const clearAlpha = renderer.getClearAlpha();
     const lensing = holeUniforms.uHoleRadius.value > 1e-4;
     this.transparent = !lensing;
 
@@ -24,12 +26,15 @@ export class ShotPass extends PassNode {
       if (lensing) {
         scene.background = null;
         scene.backgroundNode = null;
+        // Resolved alpha carries the foreground's MSAA coverage into the lensing composite.
+        renderer.setClearAlpha(0);
       }
 
       super.updateBefore(frame);
     } finally {
       scene.background = background;
       scene.backgroundNode = backgroundNode;
+      renderer.setClearAlpha(clearAlpha);
     }
 
     this.warmed = true;
