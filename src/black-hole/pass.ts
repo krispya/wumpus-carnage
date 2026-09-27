@@ -1,4 +1,11 @@
-import { type Camera, Layers, type NodeFrame, type Object3D, PassNode } from 'three/webgpu';
+import {
+  type Camera,
+  Layers,
+  type NodeBuilder,
+  type NodeFrame,
+  type Object3D,
+  PassNode,
+} from 'three/webgpu';
 import { uniform } from 'three/tsl';
 import { BLAST_LAYER } from '../battle/content';
 import { SkylessPass } from '../void/pass';
@@ -11,16 +18,23 @@ import { backdropCamera, holeUniforms } from './materials';
  */
 export class ShotPass extends SkylessPass {
   private warmed = false;
+  private empty = false;
+  private readonly hasForeground: () => boolean;
 
-  constructor(scene: Object3D, camera: Camera) {
+  constructor(scene: Object3D, camera: Camera, hasForeground: () => boolean) {
     super(scene, camera, 'shot', { samples: 4, storeMultisampledColorBuffer: false });
+    this.hasForeground = hasForeground;
   }
 
   override updateBefore(frame: NodeFrame): undefined {
     if (this.warmed && holeUniforms.uInside.value > 0.5) return;
 
     this.transparent = holeUniforms.uHoleRadius.value <= 1e-4;
+    const empty = !this.transparent && !this.hasForeground();
+    // Clear the vanished foreground once, then reuse its empty colour and depth throughout the fall.
+    if (empty && this.empty) return;
     super.updateBefore(frame);
+    this.empty = empty;
     this.warmed = true;
   }
 }
@@ -31,9 +45,11 @@ export class ShotPass extends SkylessPass {
  */
 export class BlastPass extends SkylessPass {
   readonly drawn = uniform(0);
+  private readonly hasBlasts: () => boolean;
 
-  constructor(scene: Object3D, camera: Camera) {
-    super(scene, camera, 'blast');
+  constructor(scene: Object3D, camera: Camera, hasBlasts: () => boolean) {
+    super(scene, camera, 'blast', { samples: 0, depthBuffer: false });
+    this.hasBlasts = hasBlasts;
     const layers = new Layers();
     layers.set(BLAST_LAYER);
     this.setLayers(layers);
@@ -42,9 +58,10 @@ export class BlastPass extends SkylessPass {
 
   override updateBefore(frame: NodeFrame): undefined {
     const lensing = holeUniforms.uHoleRadius.value > 1e-4;
-    this.drawn.value = lensing ? 0 : 1;
+    const draw = !lensing && this.hasBlasts();
+    this.drawn.value = draw ? 1 : 0;
 
-    if (!lensing) super.updateBefore(frame);
+    if (draw) super.updateBefore(frame);
   }
 }
 
@@ -52,10 +69,17 @@ export class BlastPass extends SkylessPass {
 export class BackdropPass extends PassNode {
   private warmed = false;
 
-  constructor(scene: Object3D) {
-    super(PassNode.COLOR, scene, backdropCamera, { samples: 0, depthBuffer: false });
+  constructor(scene: Object3D, options: ConstructorParameters<typeof PassNode>[3] = {}) {
+    super(PassNode.COLOR, scene, backdropCamera, { ...options, samples: 0, depthBuffer: false });
     this.name = 'black-hole-backdrop';
     this.setResolutionScale(0.5);
+  }
+
+  override setup(builder: NodeBuilder) {
+    const output = super.setup(builder);
+    // PassNode defaults to the renderer's output type, even when its target has an explicit type.
+    if (this.options.type !== undefined) this.renderTarget.texture.type = this.options.type;
+    return output;
   }
 
   override updateBefore(frame: NodeFrame): undefined {

@@ -27,7 +27,6 @@ import {
   type Node,
   OneFactor,
   type TextureNode,
-  SrcAlphaFactor,
   ZeroFactor,
 } from 'three/webgpu';
 import { BLAST, BOLT_CORE, SMALLEST } from './content';
@@ -42,10 +41,11 @@ function pixelAt(point: Node<'vec3'>): Node<'float'> {
 /** Glowing light, added over whatever is behind it, never hiding it and never sorted. */
 function glowMaterial(name: string): MeshBasicNodeMaterial {
   // Light adds to the frame's colour but never to how much of it is covered, so the sky laid behind the frame shows
-  // through the glow in full, as it would under light added straight over it.
+  // through the glow in full. Premultiplying opacity lets the RGB-only backdrop receive the same light.
   const material = new MeshBasicNodeMaterial({
     blending: CustomBlending,
-    blendSrc: SrcAlphaFactor,
+    blendSrc: OneFactor,
+    premultipliedAlpha: true,
     blendDst: OneFactor,
     blendSrcAlpha: ZeroFactor,
     blendDstAlpha: OneFactor,
@@ -215,7 +215,7 @@ export function blastMaterial(
   material.colorNode = fire.add(flash).add(ring).add(remnant).mul(edge);
 
   // Its light adds up, and how far off it is, which is kept as it is, tells the frame what stands in front of it.
-  material.blendSrc = OneFactor;
+  material.premultipliedAlpha = false;
   material.blendSrcAlpha = OneFactor;
   material.blendDstAlpha = ZeroFactor;
   material.opacityNode = positionView.z.negate();

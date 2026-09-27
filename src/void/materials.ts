@@ -237,8 +237,8 @@ type Nebula = ReturnType<typeof nebulaFrom>;
  * slowly still. Kept across a hot module replacement.
  */
 export const nebulaCubes = retained('nebula', () => ({
-  glow: new CubeRenderTarget(1024, { type: HalfFloatType }),
-  fields: new CubeRenderTarget(512, { type: HalfFloatType }),
+  glow: new CubeRenderTarget(1024, { type: HalfFloatType, depthBuffer: false }),
+  fields: new CubeRenderTarget(512, { type: HalfFloatType, depthBuffer: false }),
 }));
 
 /** The nebula along `direction`, looked up in its cubes. */
