@@ -36,19 +36,29 @@ export function measureDread(world: World): void {
   });
 }
 
-/** A heartbeat's shape through one beat: a hard throb and a softer one after it, then quiet. */
-function heartbeat(phase: number): number {
-  const lub = Math.max(Math.sin(phase), 0) ** 8;
-  const dub = Math.max(Math.sin(phase - 0.9), 0) ** 8;
+/** Growth in log scale, easing into the slower pace over the last fifth of its initial growth. */
+function growth(age: number): number {
+  const time = age / HOLE.grow;
+  const pace = 1.4 * HOLE.beyond;
 
-  return Math.min(lub + 0.55 * dub, 1);
+  if (time < 0.8) return time ** 1.4;
+  if (time >= 1) return 1 + pace * (time - 1);
+
+  // A cubic Hermite segment matches the value and slope at both ends.
+  const t = (time - 0.8) / 0.2;
+  const start = 0.8 ** 1.4;
+  const enter = 1.4 * 0.8 ** 0.4 * 0.2;
+  const leave = pace * 0.2;
+  const a = 2 * start - 2 + enter + leave;
+  const b = 3 - 3 * start - 2 * enter - leave;
+
+  return ((a * t + b) * t + enter) * t + start;
 }
 
 /**
  * Age each hole and work out what the scene reads from it: it tears open as a pinprick and grows, slowly and then
- * faster and faster, without end. It warms its pull, throbs like a heartbeat that quickens with dread, drags space
- * round with it faster the harder it pulls and the nearer doom is, and gulps each meal, swelling past its size and
- * settling back.
+ * faster, then eases into steady growth. Its pull warms up and briefly strengthens as it swallows a meal. Space
+ * drags round with it faster the harder it pulls and the nearer doom is.
  */
 export function advanceHoles(world: World): void {
   const { delta } = world.get(Time)!;
@@ -57,29 +67,16 @@ export function advanceHoles(world: World): void {
   world.query(BlackHole).updateEach(([hole]) => {
     hole.age += delta;
 
-    const rate = DOOM.calm + (DOOM.frantic - DOOM.calm) * dread;
-    const pulse = hole.pulse + delta * rate * Math.PI * 2;
-
-    if (Math.floor(pulse / (Math.PI * 2)) > Math.floor(hole.pulse / (Math.PI * 2))) hole.beats++;
-
-    hole.pulse = pulse;
-    hole.throb = heartbeat(pulse % (Math.PI * 2));
-
     const open = easing.cubicOut(ramp(hole.age, 0, HOLE.open));
     const warm = easing.sineInOut(ramp(hole.age, 0.2, HOLE.warm));
-    // Once it has eaten it settles: one slow swell as it gulps its meal down, and its breath and heart go still.
+    // Swallowing briefly strengthens the pull without changing the horizon's growth.
     const fed = hole.age - hole.fedAt;
-    const settled = Number.isFinite(fed) ? Math.min(fed / HOLE.gulp, 1) : 0;
     const swallowing = Number.isFinite(fed) ? fed / (HOLE.gulp / 4) : 0;
     const gulp = HOLE.swell * swallowing * Math.exp(1 - swallowing);
-    const breath = 1 + HOLE.breath * Math.sin(hole.age * 2.3) * (1 - settled);
 
-    // It grows evenly in scale, from a pinprick to full, slowly at first and then faster and faster, and on past
-    // full at a gentler pace.
-    const growing = hole.age / HOLE.grow;
-    const grown = growing < 1 ? growing ** 1.4 : 1 + 1.4 * HOLE.beyond * (growing - 1);
+    const grown = growth(hole.age);
     const size = HOLE.pinprick * (HOLE.full / HOLE.pinprick) ** grown;
-    hole.horizon = size * open * breath * (1 + DOOM.throb * hole.throb * (1 - settled)) * (1 + gulp);
+    hole.horizon = size * open;
     hole.presence = Math.min(grown, 1);
     hole.pull = warm * (1 + gulp);
     hole.swirl += delta * LENS.swirl * hole.pull * (1 + 2 * dread);

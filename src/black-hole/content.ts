@@ -47,9 +47,8 @@ export const LENS = {
  * The hole's life, in seconds and world units. It tears open out of nothing over `open` as a pinprick, its shadow
  * `pinprick` wide, so small it could be a trick of the eye but for the way space warps round it. Then it grows, at
  * first so slowly it seems not to and then faster and faster, evenly in scale, reaching `full` after `grow` seconds
- * and still growing after at `beyond` of that pace, until it is everything. Its pull warms up over `warm`. It
- * breathes a little, and it gulps what it swallows in one slow swell, `swell` past its size, settling over `gulp`
- * seconds, after which it is still.
+ * and easing into continued growth at `beyond` of that pace, until it is everything. Its pull warms up over `warm`
+ * and strengthens by `swell` when it swallows a meal, settling over `gulp` seconds.
  */
 export const HOLE = {
   open: 0.3,
@@ -58,7 +57,6 @@ export const HOLE = {
   grow: 7,
   beyond: 0.05,
   warm: 1.6,
-  breath: 0.03,
   gulp: 1.4,
   swell: 0.06,
 };
@@ -85,9 +83,7 @@ export const CAPTURE = {
 };
 
 /**
- * Doom. Dread rises as the hole grows and climbs toward its worst as the hole draws the wumpus in, and the whole
- * scene answers it: the hole throbs like a heartbeat, from `calm` beats a second to `frantic`, each throb swelling
- * it by `throb`. The frame drains of colour and closes in. `ease` is how quickly dread follows what is happening,
- * per second.
+ * Dread rises as the hole grows and draws the wumpus in. The frame drains of colour and closes in. `ease` is how
+ * quickly dread follows what is happening, per second.
  */
-export const DOOM = { calm: 0.7, frantic: 2.3, throb: 0.05, ease: 1.5 };
+export const DOOM = { ease: 1.5 };

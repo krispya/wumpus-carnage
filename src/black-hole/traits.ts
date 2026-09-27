@@ -5,9 +5,7 @@ import type { PerspectiveCamera } from 'three/webgpu';
 /**
  * A black hole, `age` seconds since it formed. What the rest of the scene reads: how wide its shadow is, in world
  * units. How far it has grown from a pinprick, 0 to 1. How hard it pulls, 0 to 1, a little over while it gulps. How
- * far it has dragged space round with it, in radians. The age at which it last swallowed something, and its
- * heartbeat: how far through a beat it is, in radians, how many beats it has throbbed, and how hard it is throbbing
- * now, 0 to 1.
+ * far it has dragged space round with it, in radians. The age at which it last swallowed something.
  */
 export const BlackHole = trait({
   age: 0,
@@ -16,9 +14,6 @@ export const BlackHole = trait({
   pull: 0,
   swirl: 0,
   fedAt: Number.NEGATIVE_INFINITY,
-  pulse: 0,
-  beats: 0,
-  throb: 0,
 });
 
 /** How close doom feels, from 0, a battle like any other, to 1, the end. The whole scene answers it. */
