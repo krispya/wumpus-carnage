@@ -87,6 +87,7 @@ export const holeUniforms = retained('black-hole', () => ({
   uTideHorizon: uniform(HOLE.full),
   uTideCentre: uniform(new Vector3()),
   uTide: uniform(0),
+  uTideStretch: uniform(1),
   uTideCurl: uniform(0),
   uTideWring: uniform(0),
 }));
@@ -107,7 +108,8 @@ const {
   uInfall,
   uInside,
 } = holeUniforms;
-const { uTideHole, uTideHorizon, uTideCentre, uTide, uTideCurl, uTideWring } = holeUniforms;
+const { uTideHole, uTideHorizon, uTideCentre, uTide, uTideStretch, uTideCurl, uTideWring } =
+  holeUniforms;
 
 /**
  * Whether a hole is bending the frame. While one is, the lens fills whatever the frame's foreground leaves clear
@@ -299,7 +301,7 @@ export function dreadGrade(color: Node<'vec3'>): Node<'vec3'> {
 /**
  * Spaghettify a body's vertex, in its own space, by the tide of a hole, all of it about the body's middle, which
  * stays where it is. It stretches along the line to the hole, so its near side reaches in and its far side trails out.
- * squeezed across that line to keep its bulk. Wrung about that line, its ends turning opposite ways, more the further
+ * squeezed across that line as the tide builds. Wrung about that line, its ends turning opposite ways, more the further
  * they are from the middle, and bent round the hole as the hole's spin drags it, its near end swinging on ahead of
  * the middle and its far end falling behind, so it winds in like a noodle. With no tide it is left as it is.
  */
@@ -311,9 +313,14 @@ export function tidal(position: Node<'vec3'>): Node<'vec3'> {
   const offset = world.sub(uTideHole);
   const fromMiddle = dot(offset, axis).sub(reach);
   const across = offset.sub(axis.mul(fromMiddle.add(reach)));
-  const stretch = uTide.mul(3).add(1);
+  const stretch = uTideStretch;
   const reached = max(reach.add(fromMiddle.mul(stretch)), 0);
-  const wrung = turned(across.div(stretch.sqrt()), axis, uTideWring.mul(uTide).mul(fromMiddle));
+  // Keep the final strand thick enough to read as its length runs beyond the frame.
+  const wrung = turned(
+    across.div(uTide.mul(3).add(1).sqrt()),
+    axis,
+    uTideWring.mul(uTide).mul(fromMiddle)
+  );
   const drawn = axis.mul(reached).add(wrung);
   const curl = (nearness: Node<'float'>) => uTideCurl.mul(uTide).div(nearness.mul(nearness).add(0.5));
   const turn = curl(length(drawn).div(uTideHorizon)).sub(curl(reach.div(uTideHorizon)));

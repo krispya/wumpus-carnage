@@ -29,6 +29,8 @@ export const Captured = trait({
   drift: (): Vec3 => vec3.create(),
   age: 0,
   tide: 0,
+  /** Length multiplier shared by the deformation and camera framing. */
+  stretch: 1,
 });
 
 /** Marks a body the hole has swallowed. */

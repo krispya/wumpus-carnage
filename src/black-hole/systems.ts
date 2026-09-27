@@ -115,6 +115,8 @@ export function drawIn(world: World): void {
 
     const reached = clamp((tide.reach - distance / horizon) / (tide.reach - 1), 0, 1);
     captured.tide = tide.most * reached ** 1.5;
+    captured.stretch =
+      1 + captured.tide * 3 + tide.stretch * easing.sineInOut(ramp(progress, 0.65, 0.98));
 
     if (progress >= 1) {
       transform.scale = 0;
@@ -163,6 +165,7 @@ export function syncBlackHoleView(world: World): void {
     uniforms.uHoleLens.value = 0;
     uniforms.uInside.value = 0;
     uniforms.uTide.value = 0;
+    uniforms.uTideStretch.value = 1;
 
     return;
   }
@@ -197,15 +200,17 @@ export function syncBlackHoleView(world: World): void {
 
   if (captured === undefined) {
     uniforms.uTide.value = 0;
+    uniforms.uTideStretch.value = 1;
 
     return;
   }
 
-  const { centre: into, tide } = captured.get(Captured)!;
+  const { centre: into, tide, stretch } = captured.get(Captured)!;
   uniforms.uTideHole.value.fromArray(into);
   uniforms.uTideCentre.value.fromArray(captured.get(Transform)!.position);
   uniforms.uTideHorizon.value = Math.max(hole.horizon, 0.05);
   uniforms.uTide.value = tide;
+  uniforms.uTideStretch.value = stretch;
   uniforms.uTideCurl.value = CAPTURE.tide.curl;
   uniforms.uTideWring.value = CAPTURE.tide.wring;
 }

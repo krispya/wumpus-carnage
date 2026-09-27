@@ -70,7 +70,8 @@ export const HOLE = {
  * last. It spins `spinUp` times faster as it goes. The tide takes hold of it within `tide.reach` horizon radii,
  * gently at first and then harder, stretching it about its middle up to `tide.most` at the horizon, wringing it
  * `tide.wring` radians a unit from its middle, its ends turning opposite ways, and bending its near end `tide.curl`
- * radians round the hole ahead of its middle.
+ * radians round the hole ahead of its middle. Over the final third of the capture, `stretch` adds to its length
+ * multiplier so the body unravels into a long strand.
  */
 export const CAPTURE = {
   duration: 12,
@@ -79,7 +80,7 @@ export const CAPTURE = {
   hang: 5.8,
   edge: 0.35,
   spinUp: 1.6,
-  tide: { reach: 5, most: 1.8, curl: 0.45, wring: 1.2 },
+  tide: { reach: 5, most: 1.8, curl: 0.45, wring: 1.2, stretch: 22 },
 };
 
 /**

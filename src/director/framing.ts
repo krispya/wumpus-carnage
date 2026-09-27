@@ -5,7 +5,7 @@ const back = vec3.create();
 const right = vec3.create();
 const up = vec3.create();
 
-/** Pull back to fit a tumbling body, stretched along the tide, with room for its limbs and curl. */
+/** Frame a tumbling, stretched body. Coverage above one lets its ends extend past the viewport. */
 export function frameWumpus(
   position: Vec3,
   centre: Vec3,
@@ -14,7 +14,8 @@ export function frameWumpus(
   aspect: number,
   fov: number,
   roll: number,
-  weight: number
+  weight: number,
+  coverage: number
 ): void {
   vec3.subtract(back, position, centre);
   const distance = vec3.length(back);
@@ -32,7 +33,7 @@ export function frameWumpus(
   const height = extent(vertical * Math.cos(roll) - horizontal * Math.sin(roll));
   const depth = extent(vec3.dot(axis, back));
   const halfHeight = Math.tan((fov * Math.PI) / 360);
-  const fit = depth + Math.max(width / aspect, height) / (halfHeight * 0.8);
+  const fit = depth + Math.max(width / aspect, height) / (halfHeight * coverage);
 
   vec3.scaleAndAdd(position, position, back, Math.max(fit - distance, 0) * weight);
 }

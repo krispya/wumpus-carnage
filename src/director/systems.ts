@@ -291,9 +291,23 @@ function flightShot(
   }
 
   if (bodyFraming > 0 && wumpus?.has(Swallowed) === false) {
-    const stretch = 1 + (wumpus.get(Captured)?.tide ?? 0) * 3;
+    const captured = wumpus.get(Captured);
+    const stretch = captured?.stretch ?? 1;
+    const filling = easing.sineInOut(
+      clamp(((captured?.age ?? 0) / CAPTURE.duration - 0.65) / 0.33, 0, 1)
+    );
     vec3.normalize(outward, vec3.subtract(outward, at, hole));
-    frameWumpus(shot.position, at, outward, stretch, aspect, fov, roll, bodyFraming);
+    frameWumpus(
+      shot.position,
+      at,
+      outward,
+      stretch,
+      aspect,
+      fov,
+      roll,
+      bodyFraming * (1 - filling),
+      lerp(0.8, 3.5, filling)
+    );
   }
 
   world.set(Shot, { ...shot, roll, fov, speed });
