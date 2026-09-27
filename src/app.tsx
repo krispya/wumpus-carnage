@@ -21,8 +21,6 @@ import { Void } from './void/renderer';
 import { world } from './world';
 import { WumpusRenderer } from './wumpus/renderer';
 
-const maxDpr = matchMedia('(pointer: coarse)').matches ? 1.5 : 2;
-
 export function App() {
   return (
     <WorldProvider world={world}>
@@ -33,7 +31,7 @@ export function App() {
           near: CAMERA.near,
           position: [...CAMERA.position],
         }}
-        dpr={[1, maxDpr]}
+        dpr={[1, matchMedia('(pointer: coarse)').matches ? 1.5 : 2]}
         renderer={{ toneMapping: NeutralToneMapping, toneMappingExposure: 1 }}
       >
         <Suspense fallback={null}>
