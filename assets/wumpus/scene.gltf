@@ -49,9 +49,10 @@
     },
     {
       "bufferView": 0,
-      "componentType": 5125,
+      "componentType": 5123,
       "count": 59823,
-      "type": "SCALAR"
+      "type": "SCALAR",
+      "byteOffset": 0
     },
     {
       "bufferView": 2,
@@ -104,8 +105,8 @@
     },
     {
       "bufferView": 0,
-      "byteOffset": 239292,
-      "componentType": 5125,
+      "byteOffset": 119646,
+      "componentType": 5123,
       "count": 5745,
       "type": "SCALAR"
     },
@@ -160,8 +161,8 @@
     },
     {
       "bufferView": 0,
-      "byteOffset": 262272,
-      "componentType": 5125,
+      "byteOffset": 131136,
+      "componentType": 5123,
       "count": 4620,
       "type": "SCALAR"
     },
@@ -216,8 +217,8 @@
     },
     {
       "bufferView": 0,
-      "byteOffset": 280752,
-      "componentType": 5125,
+      "byteOffset": 140376,
+      "componentType": 5123,
       "count": 25428,
       "type": "SCALAR"
     },
@@ -272,8 +273,8 @@
     },
     {
       "bufferView": 0,
-      "byteOffset": 382464,
-      "componentType": 5125,
+      "byteOffset": 191232,
+      "componentType": 5123,
       "count": 95616,
       "type": "SCALAR"
     },
@@ -328,8 +329,8 @@
     },
     {
       "bufferView": 0,
-      "byteOffset": 764928,
-      "componentType": 5125,
+      "byteOffset": 382464,
+      "componentType": 5123,
       "count": 8208,
       "type": "SCALAR"
     },
@@ -384,8 +385,8 @@
     },
     {
       "bufferView": 0,
-      "byteOffset": 797760,
-      "componentType": 5125,
+      "byteOffset": 398880,
+      "componentType": 5123,
       "count": 8208,
       "type": "SCALAR"
     }
@@ -403,14 +404,14 @@
   "bufferViews": [
     {
       "buffer": 0,
-      "byteLength": 830592,
+      "byteLength": 415296,
       "name": "floatBufferViews",
       "target": 34963
     },
     {
       "buffer": 0,
       "byteLength": 315096,
-      "byteOffset": 830592,
+      "byteOffset": 415296,
       "byteStride": 8,
       "name": "floatBufferViews",
       "target": 34962
@@ -418,7 +419,7 @@
     {
       "buffer": 0,
       "byteLength": 945288,
-      "byteOffset": 1145688,
+      "byteOffset": 730392,
       "byteStride": 12,
       "name": "floatBufferViews",
       "target": 34962
@@ -426,7 +427,7 @@
   ],
   "buffers": [
     {
-      "byteLength": 2090976,
+      "byteLength": 1675680,
       "uri": "scene.bin"
     }
   ],

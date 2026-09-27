@@ -43,7 +43,8 @@ plain functions over the world, and React only mounts scene objects and register
     them
   - `void` and `post`: the painted sky, with its stars, nebula, and the eclipsed star and its light beams, the
     lighting, and bloom, vignette, grain, and dither
-- `assets/` holds source models, sounds, and the insert's image, which Vite fingerprints on build
+- `assets/` holds the model, sounds, and insert image. Original WAVs stay beside the MP3 copies used by the app;
+  Vite ships only the imported copies. The model uses 16-bit mesh indices without changing its geometry.
 
 ## Libraries
 

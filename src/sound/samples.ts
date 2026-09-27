@@ -4,7 +4,7 @@ import type { Loop, Recording, SoundDraw, Synth } from './traits';
 /** A constant, or seconds and values alternating: held at the first value, then ramped exponentially onward. */
 type Curve = number | readonly number[];
 
-const files = import.meta.glob<string>('../../assets/sounds/**/*.wav', {
+const files = import.meta.glob<string>('../../assets/sounds/**/*.mp3', {
   query: '?url',
   import: 'default',
   eager: true,
@@ -30,7 +30,7 @@ async function loadRecordings(): Promise<Record<Recording, AudioBuffer[]>> {
   const decoder = new OfflineAudioContext(1, 1, 44_100);
   const urls = new Map(
     Object.entries(files).map(([path, url]) => [
-      path.slice(path.lastIndexOf('/') + 1, -'.wav'.length),
+      path.slice(path.lastIndexOf('/') + 1, -'.mp3'.length),
       url,
     ])
   );
