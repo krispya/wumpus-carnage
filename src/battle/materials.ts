@@ -1,18 +1,14 @@
 import {
   abs,
-  atan,
   cos,
-  dot,
   fwidth,
   Fn,
   sin,
   cameraPosition,
   cameraProjectionMatrix,
-  cameraWorldMatrix,
   cross,
   exp,
   instancedBufferAttribute,
-  mx_fractal_noise_float,
   length,
   max,
   mix,
@@ -23,7 +19,6 @@ import {
   select,
   screenSize,
   smoothstep,
-  sqrt,
   uv,
   vec3,
   vec4,
@@ -39,7 +34,8 @@ import {
   type TextureNode,
   ZeroFactor,
 } from 'three/webgpu';
-import { BLAST, BOLT_CORE, SMALLEST } from './content';
+import { BOLT_CORE, SMALLEST } from './content';
+import { plasmaLight } from './plasma';
 
 /** How many world units one pixel of the frame spans at `point`, from how far it is from the camera. */
 function pixelAt(point: Node<'vec3'>): Node<'float'> {
@@ -171,96 +167,18 @@ export function blastMaterial(
   const material = glowMaterial('battle-blasts');
   const centre = instancedBufferAttribute<'vec4'>(centreAttribute, 'vec4');
   const state = instancedBufferAttribute<'vec3'>(stateAttribute, 'vec3');
-  const color = (name: keyof typeof BLAST.colors) => vec3(...BLAST.colors[name]);
 
   const reach = 1.35;
   // The far side covers the effect both outside and inside, with only one surface shaded per pixel.
   material.side = BackSide;
   material.positionNode = centre.xyz.add(positionGeometry.mul(centre.w.mul(reach)));
 
-  const age = state.x;
-  const grown = exp(age.mul(-1.8)).oneMinus().mul(0.9).add(0.035);
-  const ray = normalize(positionWorld.sub(cameraPosition));
-  const origin = cameraPosition.sub(centre.xyz).div(centre.w);
-  const along = dot(origin, ray);
-  const impact = dot(origin, origin).sub(along.mul(along)).max(0);
-  const out = sqrt(impact);
-  // One analytic intersection anchors the noise in space as the view crosses the fireball.
-  const halfChord = sqrt(grown.mul(grown).sub(impact).max(0));
-  const exit = along.negate().add(halfChord);
-  const thickness = exit.sub(along.negate().sub(halfChord).max(0)).max(0);
-  const flow = origin.add(ray.mul(exit)).div(grown);
-  const angle = atan(flow.y, flow.x.add(1e-5));
-  // Two shared noise fields shape the fire's edge and its hot folds.
-  const boil = mx_fractal_noise_float(
-    flow.mul(3.2).add(vec3(0, 0, age.mul(0.3).add(state.y))),
-    3,
-    2,
-    0.5
+  material.colorNode = plasmaLight(
+    cameraPosition,
+    normalize(positionWorld.sub(cameraPosition)),
+    centre,
+    state
   );
-  const detail = mx_fractal_noise_float(
-    flow
-      .mul(26)
-      .sub(normalize(flow).mul(age.mul(0.7)))
-      .add(vec3(0, 0, age.mul(0.42).add(state.y))),
-    3,
-    2,
-    0.5
-  );
-  const lobes = sin(angle.mul(7).add(state.y))
-    .mul(0.075)
-    .add(sin(angle.mul(13).sub(state.y)).mul(0.035));
-  const front = out.div(grown).add(boil.mul(0.28)).add(lobes);
-  const body = smoothstep(1.08, 0.72, front);
-  const breaking = smoothstep(1.4, 5.5, age);
-  const fold = boil.add(detail.mul(0.65));
-  const folds = exp(
-    abs(fold)
-      .div(
-        length(fwidth(flow))
-          .mul(16)
-          .max(1 / 15)
-      )
-      .negate()
-  );
-  const torn = smoothstep(-0.16, 0.22, detail.add(boil.mul(0.5)));
-  const surface = smoothstep(-0.38, 0.32, boil.add(detail.mul(1.4))).pow(1.4);
-  const fuel = mix(surface.mul(1.5), folds.mul(torn).mul(2.8), breaking);
-  const heat = exp(age.mul(-0.12));
-  const hot = heat
-    .mul(surface.mul(0.45).add(folds.mul(0.35)).add(0.1))
-    .mul(front.mul(-0.35).add(1).max(0));
-  const fire = mix(color('ember'), color('fire'), smoothstep(0.08, 0.5, hot))
-    .add(
-      color('core')
-        .mul(smoothstep(0.45, 0.95, hot))
-        .mul(2.5)
-    )
-    .mul(body)
-    .mul(smoothstep(0, 0.3, thickness))
-    .mul(fuel)
-    .mul(heat.mul(3.8))
-    .mul(state.z);
-  const flash = color('core').mul(
-    exp(out.mul(out).mul(-8))
-      .mul(exp(age.mul(-7)))
-      .mul(40)
-  );
-  const wave = exp(age.mul(-2.6)).oneMinus().mul(1.28);
-  const ring = color('ring')
-    .mul(
-      exp(out.sub(wave).div(0.018).pow(2).negate()).add(
-        exp(out.sub(wave).div(0.065).pow(2).negate()).mul(0.25)
-      )
-    )
-    .mul(exp(age.mul(-2.4)))
-    .mul(6);
-  const edge = smoothstep(reach, reach * 0.88, out);
-  // Thin the remnant as the shot turns away, before the lens stretches its last visible edge across the frame.
-  const forward = cameraWorldMatrix.mul(vec4(0, 0, -1, 0)).xyz;
-  const facing = dot(normalize(centre.xyz.sub(cameraPosition)), forward);
-  const viewing = mix(1, smoothstep(0.35, 0.95, facing), smoothstep(4, 8, age));
-  material.colorNode = fire.add(flash).add(ring).mul(edge).mul(viewing);
 
   // Its light adds up, and how far off it is, which is kept as it is, tells the frame what stands in front of it.
   material.premultipliedAlpha = false;

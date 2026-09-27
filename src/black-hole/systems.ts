@@ -2,7 +2,6 @@ import type { Entity, World } from 'koota';
 import { clamp, vec3 } from 'math';
 import { easing } from 'math/time';
 import { Vector3 } from 'three/webgpu';
-import { BLAST_LAYER } from '../battle/content';
 import { sequenceActions } from '../sequence/actions';
 import { Shot } from '../director/traits';
 import { Time } from '../time/traits';
@@ -148,11 +147,10 @@ export function syncBlackHoleView(world: World): void {
   const { camera } = view;
   const uniforms = holeUniforms;
 
-  // The backdrop is shot through the same camera, blind to the foreground.
+  // The backdrop carries sky and sparks. Plasma is sampled separately in every direction.
   camera.updateMatrixWorld();
   backdropCamera.copy(camera, false);
   backdropCamera.layers.set(0);
-  backdropCamera.layers.enable(BLAST_LAYER);
   // Bent rays need a wider source than the visible portrait frame, especially beside the hole.
   backdropCamera.aspect = Math.max(camera.aspect, LENS.backdropAspect);
   backdropCamera.updateProjectionMatrix();

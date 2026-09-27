@@ -40,8 +40,8 @@ export class ShotPass extends SkylessPass {
 }
 
 /**
- * The blasts, drawn apart at half the frame's resolution, since they are soft fire that fills it. While the hole
- * bends the frame the backdrop carries them instead, so this rests, and says whether it drew them this frame.
+ * Blasts are drawn at half resolution before lensing. The lens samples their cached fields directly once the hole
+ * opens, so this rests, and says whether it drew them this frame.
  */
 export class BlastPass extends SkylessPass {
   readonly drawn = uniform(0);

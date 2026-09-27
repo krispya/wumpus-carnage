@@ -26,6 +26,7 @@ import {
   VAST_FLARES,
 } from './content';
 import { Battle, BattleView, Blast, Bolt, Flare, Shell } from './traits';
+import { plasmaUniforms } from './plasma';
 import { openingBattleFrame, orientBattle, placeBattle, type BattleFrame } from './framing';
 
 type Draw = () => number;
@@ -362,6 +363,7 @@ export function syncBattleView(world: World): void {
   const blastCentres = view.blastCentre.array as Float32Array;
   const blastStates = view.blastState.array as Float32Array;
   let blasts = 0;
+  plasmaUniforms.centre.value.w = 0;
 
   let light = 0;
 
@@ -377,6 +379,10 @@ export function syncBattleView(world: World): void {
     blastStates[blasts * 3] = blast.age;
     blastStates[blasts * 3 + 1] = blast.seed;
     blastStates[blasts * 3 + 2] = clamp((BLAST.life - blast.age) / BLAST.fade, 0, 1);
+    if (blasts === 0) {
+      plasmaUniforms.centre.value.set(...blast.position, BLAST.radius);
+      plasmaUniforms.state.value.set(blast.age, blast.seed, blastStates[2]!);
+    }
     blasts++;
   });
 

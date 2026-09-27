@@ -35,6 +35,7 @@ import {
   Vector3,
 } from 'three/webgpu';
 import { retained } from '../utils';
+import { plasmaAround, plasmaUniforms } from '../battle/plasma';
 import { skyAt } from '../void/materials';
 import { HOLE, LENS, SHADOW, SPIN_AXIS } from './content';
 import { bend, rayTable } from './rays';
@@ -152,6 +153,7 @@ export function throughHole(
   backdrop: TextureNode
 ): Node<'vec3'> {
   const radius = length(uCameraPosition.sub(uHoleCentre)).div(uHoleRadius.max(1e-4));
+  const plasma = plasmaAround(() => uHoleRadius.value > 1e-4 && uInside.value <= 0.5);
   const tracedRay = rayTable(
     radius,
     uHoleRadius.greaterThan(1e-4).and(uInside.lessThanEqual(0.5)),
@@ -275,6 +277,9 @@ export function throughHole(
               .mul(smoothstep(nudged, wide, length(away.sub(ray))).oneMinus());
             const beyond = mix(skyAt(direction), backdrop.sample(landing.clamp(0, 1)).rgb, extended);
             seen.assign(mix(beyond, seen, framed));
+          });
+          If(plasmaUniforms.centre.w.greaterThan(0), () => {
+            seen.addAssign(plasma(uCameraPosition, direction));
           });
         });
 
