@@ -143,9 +143,11 @@ export const SHOTS: Record<ShotName, Still | Flight> = {
  *   off, no narrower than `narrowest` and no wider than `fov`, the frame rolling up to `roll`, shaking by `shake`.
  *   The wumpus whips past it, and over its next `pass` units the camera swings round to `chase` it.
  * - `chase`: beside the wumpus, `side` units off and `back` units up the line from the hole, its middle dead centre
- *   through a `fov` lens, as it slows at the horizon, wrung and stretched and reddening.
+ *   through a `fov` lens, as it slows at the horizon, wrung and stretched and reddening. The tracking shots pull
+ *   further back as needed to fit its body and tidal stretch inside the viewport.
  * - `back`: once it is gone, the camera pulls back over `seconds` to `reach` radii of the full-grown horizon from the
- *   hole, turning onto it and levelling, the lens widening to `fov`, and holds on it for `look` seconds.
+ *   hole, or further to frame its lensing ring, turning onto it and levelling, the lens widening to `fov`, and
+ *   holds on it for `look` seconds.
  * - `suck`: then the hole sucks the camera in, faster and faster, its distance closing as `e` to the minus `rate`
  *   times a third of the cube of the seconds gone, growing to its full intensity over `build` seconds: shaking by
  *   `shake` of its distance, rolling up to `roll` further, the lens stretching to `fov`, and the sky sweeping forward

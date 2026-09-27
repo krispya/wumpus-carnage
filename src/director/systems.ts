@@ -2,7 +2,7 @@ import type { World } from 'koota';
 import { clamp, lerp, vec3, type Vec3 } from 'math';
 import { easing } from 'math/time';
 import { CAPTURE, HOLE, SHADOW } from '../black-hole/content';
-import { BlackHole, Swallowed } from '../black-hole/traits';
+import { BlackHole, Captured, Swallowed } from '../black-hole/traits';
 import { uCurtain } from '../post/materials';
 import { Spin } from '../motion/traits';
 import { sequenceActions } from '../sequence/actions';
@@ -22,6 +22,7 @@ import {
   openingShot,
 } from './content';
 import { insertUniforms } from './materials';
+import { frameWumpus } from './framing';
 import { Curtain, Framing, Insert, Shot, ShotView } from './traits';
 
 /** Move the curtain toward where it is heading, at a steady pace. */
@@ -176,7 +177,8 @@ function flightShot(
   turn: number
 ): void {
   const { frenzy, settle, fixate, plunge, chase, back, suck } = FLIGHT_SHOT;
-  const portrait = clamp((1.1 - world.get(Viewport)!.aspect) / 0.45, 0, 1);
+  const aspect = world.get(Viewport)!.aspect;
+  const portrait = clamp((1.1 - aspect) / 0.45, 0, 1);
   const { elapsed } = world.get(Time)!;
   const shot = world.get(Shot)!;
   const wumpus = world.queryFirst(Wumpus, Transform);
@@ -215,6 +217,7 @@ function flightShot(
   let roll = lerp(frenzyRoll, level, snapped);
   let fov = lerp(frenzy.fov, fixedFov, Math.min(snapped, 1));
   let speed = 0;
+  let bodyFraming = 1 - easing.sineInOut(settling);
 
   // The plunge: the hole takes the camera faster than the wumpus, past it, to hang `hover` radii out, looking back
   // as it bears down, stretching. It whips past, and the camera latches on beside it, its middle dead centre, as it
@@ -241,6 +244,7 @@ function flightShot(
       vec3.scaleAndAdd(chaseAt, chaseAt, vec3.normalize(beside, beside), chase.side);
       vec3.lerp(shot.position, leadAt, chaseAt, latch);
       const turning = easing.sineInOut(clamp((age - BEATS.taken) / plunge.turn, 0, 1));
+      bodyFraming = turning;
       vec3.lerp(shot.target, aim, at, turning);
       const shake =
         plunge.shake * Math.min(leading, start * 0.3) * Math.min(falling * 4, 1) * (1 - latch);
@@ -261,7 +265,15 @@ function flightShot(
       const pulling = easing.cubicOut(clamp(since / back.seconds, 0, 1));
       const sucking = Math.max(since - back.seconds - back.look, 0);
       const intensity = clamp(sucking / suck.build, 0, 1) ** 2;
-      const reach = lerp(vec3.distance(lostFrom, hole), (back.reach * HOLE.full) / SHADOW, pulling);
+      // Leave room around the shadow for its lensing ring before the final fall.
+      const framed =
+        found.get(BlackHole)!.horizon /
+        (Math.tan((back.fov * Math.PI) / 360) * Math.min(aspect, 1) * 0.45);
+      const reach = lerp(
+        vec3.distance(lostFrom, hole),
+        Math.max((back.reach * HOLE.full) / SHADOW, framed),
+        pulling
+      );
       const distance = reach * Math.exp((-suck.rate * sucking ** 3) / 3);
       vec3.normalize(outward, vec3.subtract(outward, lostFrom, hole));
       vec3.scaleAndAdd(shot.position, hole, outward, distance);
@@ -276,6 +288,12 @@ function flightShot(
       // its distance, as a share of light's speed.
       speed = Math.min(Math.sqrt(radius / distance), INFALL) * intensity;
     }
+  }
+
+  if (bodyFraming > 0 && wumpus?.has(Swallowed) === false) {
+    const stretch = 1 + (wumpus.get(Captured)?.tide ?? 0) * 3;
+    vec3.normalize(outward, vec3.subtract(outward, at, hole));
+    frameWumpus(shot.position, at, outward, stretch, aspect, fov, roll, bodyFraming);
   }
 
   world.set(Shot, { ...shot, roll, fov, speed });
