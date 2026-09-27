@@ -1,5 +1,7 @@
 # wumpus-carnage
 
+[Live site](https://krispya.github.io/wumpus-carnage/)
+
 This project was generated with create-krispya
 
 ## Project Architecture
