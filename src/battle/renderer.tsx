@@ -23,12 +23,17 @@ function createBattleDraw(): BattleDraw {
   const boltColor = buffer(BOLT_CAPACITY, 3);
   const flareCentre = buffer(FLARE_CAPACITY, 4);
   const flareColor = buffer(FLARE_CAPACITY, 4);
+  const flareShape = buffer(FLARE_CAPACITY, 2);
   const bolts = new InstancedMesh(
     quad,
     boltMaterial(boltStart, boltEnd, boltShape, boltColor),
     BOLT_CAPACITY
   );
-  const flares = new InstancedMesh(quad, flareMaterial(flareCentre, flareColor), FLARE_CAPACITY);
+  const flares = new InstancedMesh(
+    quad,
+    flareMaterial(flareCentre, flareColor, flareShape),
+    FLARE_CAPACITY
+  );
   const blastCentre = buffer(BLAST_CAPACITY, 4);
   const blastState = buffer(BLAST_CAPACITY, 3);
   const blasts = new InstancedMesh(quad, blastMaterial(blastCentre, blastState), BLAST_CAPACITY);
@@ -55,6 +60,7 @@ function createBattleDraw(): BattleDraw {
     flares,
     flareCentre,
     flareColor,
+    flareShape,
     blasts,
     blastCentre,
     blastState,

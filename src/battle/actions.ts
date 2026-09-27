@@ -140,6 +140,8 @@ export const battleActions = createActions((world) => ({
         Flare({
           position: vec3.scaleAndAdd(vec3.create(), at, around(), debris.reach),
           velocity: drift,
+          fragment: true,
+          spin: between([-4, 4]),
           color: vec3.fromValues(...(draw() < 0.5 ? colors.fire : colors.ember)),
           radius: between(debris.radius),
           energy: between(debris.energy),

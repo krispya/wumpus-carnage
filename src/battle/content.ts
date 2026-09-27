@@ -180,17 +180,16 @@ export const SHELL = {
 /**
  * The giant explosion: a capital ship going up, `radius` units across its fireball at its fullest. It flashes
  * blinding white, `flash` across and burning `flash.energy` times white, and its fireball billows out, cooling from
- * white through marigold and ember to ash, with a shockwave racing ahead of it as a thin ring. `shrapnel` streaks fly
+ * white through marigold to ember, with a shockwave racing ahead of it as a thin ring. `shrapnel` streaks fly
  * out of it, and `debris` burning fragments tumble away with whatever it flings, some faster and some slower. Its
  * fire lights everything round it, `light.intensity` times at its hottest, cooling as it does. What is left glows on
- * for `life` seconds as a smoky remnant, violet where it thins and dusky mauve where it gathers, fading over the last
- * `fade` of them.
+ * for `life` seconds as torn plasma filaments, fading over the last `fade` of them.
  */
 export const BLAST = {
   radius: 75,
   life: 90,
   fade: 20,
-  flash: { radius: 110, energy: 30, life: 1.4 },
+  flash: { radius: 90, energy: 30, life: 0.7 },
   light: { color: '#ff9a4a', intensity: 9 },
   debris: {
     count: 48,
@@ -213,9 +212,6 @@ export const BLAST = {
     core: linear('#fff6e0'),
     fire: linear('#ffb02a'),
     ember: linear('#ff4f1a'),
-    ash: linear('#3a1a22'),
     ring: linear('#ffe8c0'),
-    teal: linear('#3a2450'),
-    ochre: linear('#6a2e4c'),
   },
 };

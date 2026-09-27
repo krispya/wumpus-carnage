@@ -327,6 +327,7 @@ export function syncBattleView(world: World): void {
 
   const centres = view.flareCentre.array as Float32Array;
   const glows = view.flareColor.array as Float32Array;
+  const flareShapes = view.flareShape.array as Float32Array;
   let flares = 0;
 
   world.query(Flare).readEach(([flare]) => {
@@ -339,6 +340,8 @@ export function syncBattleView(world: World): void {
     centres[flares * 4 + 3] = flare.radius * (0.7 + 0.3 * Math.sqrt(burn));
     glows.set(flare.color, flares * 4);
     glows[flares * 4 + 3] = flare.energy * flash;
+    flareShapes[flares * 2] = flare.fragment ? flare.age * flare.spin + flare.radius * 47 : 0;
+    flareShapes[flares * 2 + 1] = flare.fragment ? 1 : 0;
     flares++;
   });
 
@@ -351,6 +354,8 @@ export function syncBattleView(world: World): void {
     centres[flares * 4 + 3] = SHELL.radius * crackle;
     glows.set(SHELL.color, flares * 4);
     glows[flares * 4 + 3] = SHELL.energy * crackle;
+    flareShapes[flares * 2] = 0;
+    flareShapes[flares * 2 + 1] = 0;
     flares++;
   });
 
@@ -388,4 +393,5 @@ export function syncBattleView(world: World): void {
 
   upload(view.flareCentre, flares);
   upload(view.flareColor, flares);
+  upload(view.flareShape, flares);
 }

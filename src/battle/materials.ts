@@ -1,5 +1,10 @@
 import {
   abs,
+  atan,
+  cos,
+  fwidth,
+  Fn,
+  sin,
   cameraPosition,
   cameraProjectionMatrix,
   cross,
@@ -100,44 +105,60 @@ export function boltMaterial(
 }
 
 /**
- * Flares: a camera-facing disc with a white-hot centre inside a halo of its colour, fading out before its edge. Like
- * a bolt, a distant flare is drawn no smaller than a few pixels, dimmer for it.
+ * Camera-facing flares and rotating fragments with hot angular edges. Distant flares and fragments stay a few
+ * pixels across, dimmer as they are widened.
  */
 export function flareMaterial(
   centreAttribute: InstancedBufferAttribute,
-  colorAttribute: InstancedBufferAttribute
+  colorAttribute: InstancedBufferAttribute,
+  shapeAttribute: InstancedBufferAttribute
 ): MeshBasicNodeMaterial {
   const material = glowMaterial('battle-flares');
   const centre = instancedBufferAttribute<'vec4'>(centreAttribute, 'vec4');
   const glow = instancedBufferAttribute<'vec4'>(colorAttribute, 'vec4');
+  const shape = instancedBufferAttribute<'vec2'>(shapeAttribute, 'vec2');
 
   const toCamera = normalize(cameraPosition.sub(centre.xyz));
   const right = normalize(cross(vec3(0, 1, 0), toCamera));
   const up = cross(toCamera, right);
+  const turnedRight = right.mul(cos(shape.x)).add(up.mul(sin(shape.x)));
+  const turnedUp = up.mul(cos(shape.x)).sub(right.mul(sin(shape.x)));
   const radius = max(centre.w, pixelAt(centre.xyz).mul(SMALLEST.flare));
   const size = radius.mul(2);
   material.positionNode = centre.xyz
-    .add(right.mul(positionGeometry.x.mul(size)))
-    .add(up.mul(positionGeometry.y.mul(size)));
+    .add(turnedRight.mul(positionGeometry.x.mul(size)))
+    .add(turnedUp.mul(positionGeometry.y.mul(size)));
 
-  const distance = length(uv().sub(0.5).mul(2));
-  const core = exp(distance.mul(distance).mul(-18));
-  const halo = exp(distance.mul(-4.5))
-    .mul(0.45)
-    .mul(smoothstep(0.6, 1, distance).oneMinus());
-  material.colorNode = mix(glow.rgb, vec3(1), core.mul(0.7))
-    .mul(core.add(halo))
-    .mul(glow.a.mul(centre.w.div(radius)));
+  material.colorNode = Fn(() => {
+    const attenuation = glow.a.mul(centre.w.div(radius)).toVar();
+    const distance = length(uv().sub(0.5).mul(2)).toVar();
+    const core = exp(distance.mul(distance).mul(-18));
+    const halo = exp(distance.mul(-4.5))
+      .mul(0.45)
+      .mul(smoothstep(0.6, 1, distance).oneMinus())
+      .toVar();
+    const flare = mix(glow.rgb, vec3(1), core.mul(0.7)).mul(core.add(halo)).mul(attenuation);
+
+    // Angular hot edges and an uneven face make the fragments read as wreckage rather than round sparks.
+    const at = uv().sub(0.5).mul(2);
+    const edge = max(abs(at.x).mul(1.7).add(at.y.mul(0.32)), abs(at.y).mul(1.1).sub(at.x.mul(0.25)));
+    const aa = fwidth(edge).max(0.015).toVar();
+    const solid = smoothstep(aa.negate(), aa, edge.sub(0.78)).oneMinus();
+    const rim = exp(abs(edge.sub(0.68)).mul(-22));
+    const facet = smoothstep(-0.12, 0.12, at.x.add(at.y.mul(0.35)));
+    const fragment = glow.rgb
+      .mul(facet.mul(0.4).add(0.16))
+      .add(vec3(1, 0.8, 0.45).mul(rim))
+      .mul(solid)
+      .add(glow.rgb.mul(halo).mul(0.15))
+      .mul(attenuation);
+    return select(shape.y.greaterThan(0.5), fragment, flare);
+  })();
 
   return material;
 }
 
-/**
- * The giant explosion, a camera-facing disc painted as it burns. A blinding flash at its heart dies in a moment.
- * its fireball billows out fast and then slower, boiling with turbulence and cooling from white through marigold
- * and ember to ash. A thin shockwave races out ahead of it and fades, and a dusty remnant, teal where it thins and
- * ochre where it gathers, glows on long after, until it fades away.
- */
+/** A flash and shock front break into hot, torn plasma that cools and thins as it expands. */
 export function blastMaterial(
   centreAttribute: InstancedBufferAttribute,
   stateAttribute: InstancedBufferAttribute
@@ -162,57 +183,66 @@ export function blastMaterial(
     .mul(reach * 2);
   const out = length(at);
   const age = state.x;
-  const boil = mx_fractal_noise_float(vec3(at.mul(2.4), age.mul(0.12).add(state.y)), 5, 2, 0.55);
-  const billow = abs(
-    mx_fractal_noise_float(vec3(at.mul(1.3), age.mul(0.08).add(state.y.add(3))), 3, 2, 0.5)
-  );
-  const drift = mx_fractal_noise_float(
-    vec3(at.mul(1.1), age.mul(0.03).add(state.y.add(9))),
+  const grown = exp(age.mul(-1.8)).oneMinus().mul(0.9).add(0.035);
+  const flow = at.div(grown);
+  const angle = atan(at.y, at.x.add(1e-5));
+  // Two shared noise fields shape the fire's edge and its hot folds.
+  const boil = mx_fractal_noise_float(vec3(flow.mul(3.2), age.mul(0.3).add(state.y)), 3, 2, 0.5);
+  const detail = mx_fractal_noise_float(
+    vec3(flow.mul(26).sub(at.div(out.max(0.02)).mul(age.mul(0.7))), age.mul(0.42).add(state.y)),
     3,
     2,
     0.5
   );
-
-  // The fireball, lumpy at its edge, hottest at its heart, cooling as a whole as it burns on.
-  const grown = exp(age.mul(-1.1)).oneMinus().mul(0.85).add(0.05);
-  const heat = exp(age.mul(-0.12));
-  const reached = out.add(billow.mul(0.45).mul(grown)).add(boil.mul(0.12).mul(grown));
-  const body = smoothstep(grown, grown.mul(0.2), reached);
-  const inside = reached.div(grown).oneMinus().max(0).sqrt();
-  const glow = heat.mul(inside.mul(0.8).add(0.3)).mul(boil.mul(0.5).add(0.85));
-  const fire = mix(
-    color('ash'),
-    mix(
-      color('ember'),
-      mix(color('fire'), color('core'), smoothstep(0.35, 0.8, glow)),
-      smoothstep(0.08, 0.3, glow)
-    ),
-    smoothstep(0.02, 0.12, glow)
-  )
-    .mul(body)
-    .mul(glow.mul(2).add(0.25));
-  const flash = color('core').mul(
-    exp(out.mul(out).mul(-5))
-      .mul(exp(age.mul(-4.5)))
-      .mul(30)
+  const lobes = sin(angle.mul(7).add(state.y))
+    .mul(0.075)
+    .add(sin(angle.mul(13).sub(state.y)).mul(0.035));
+  const front = out.div(grown).add(boil.mul(0.28)).add(lobes);
+  const body = smoothstep(1.08, 0.72, front);
+  const breaking = smoothstep(1.4, 5.5, age);
+  const fold = boil.add(detail.mul(0.65));
+  const folds = exp(
+    abs(fold)
+      .div(
+        length(fwidth(flow))
+          .mul(16)
+          .max(1 / 15)
+      )
+      .negate()
   );
-  const wave = exp(age.mul(-0.75)).oneMinus().mul(1.25);
+  const torn = smoothstep(-0.16, 0.22, detail.add(boil.mul(0.5)));
+  const surface = smoothstep(-0.38, 0.32, boil.add(detail.mul(1.4))).pow(1.4);
+  const fuel = mix(surface.mul(1.5), folds.mul(torn).mul(2.8), breaking);
+  const heat = exp(age.mul(-0.12));
+  const hot = heat
+    .mul(surface.mul(0.45).add(folds.mul(0.35)).add(0.1))
+    .mul(front.mul(-0.35).add(1).max(0));
+  const fire = mix(color('ember'), color('fire'), smoothstep(0.08, 0.5, hot))
+    .add(
+      color('core')
+        .mul(smoothstep(0.45, 0.95, hot))
+        .mul(2.5)
+    )
+    .mul(body)
+    .mul(fuel)
+    .mul(heat.mul(3.8))
+    .mul(state.z);
+  const flash = color('core').mul(
+    exp(out.mul(out).mul(-8))
+      .mul(exp(age.mul(-7)))
+      .mul(40)
+  );
+  const wave = exp(age.mul(-2.6)).oneMinus().mul(1.28);
   const ring = color('ring')
     .mul(
-      exp(out.sub(wave).div(0.05).pow(2).negate()).add(
-        exp(out.sub(wave).div(0.18).pow(2).negate()).mul(0.25)
+      exp(out.sub(wave).div(0.018).pow(2).negate()).add(
+        exp(out.sub(wave).div(0.065).pow(2).negate()).mul(0.25)
       )
     )
-    .mul(exp(age.mul(-0.9)).mul(2.5))
-    .mul(boil.mul(0.3).add(0.85));
-  const remnant = mix(color('teal'), color('ochre'), smoothstep(-0.1, 0.5, drift))
-    .mul(smoothstep(1.1, 0.1, out.add(drift.mul(0.55)).add(billow.mul(0.4))))
-    .mul(smoothstep(4, 14, age))
-    .mul(drift.mul(0.5).add(0.9))
-    .mul(state.z)
-    .mul(1.1);
-  const edge = smoothstep(reach, reach * 0.85, out);
-  material.colorNode = fire.add(flash).add(ring).add(remnant).mul(edge);
+    .mul(exp(age.mul(-2.4)))
+    .mul(6);
+  const edge = smoothstep(reach, reach * 0.88, out);
+  material.colorNode = fire.add(flash).add(ring).mul(edge);
 
   // Its light adds up, and how far off it is, which is kept as it is, tells the frame what stands in front of it.
   material.premultipliedAlpha = false;

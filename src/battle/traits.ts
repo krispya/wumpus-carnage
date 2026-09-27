@@ -45,6 +45,8 @@ export const Flare = trait({
   velocity: (): Vec3 => vec3.create(),
   color: (): Vec3 => vec3.create(),
   radius: 0.5,
+  fragment: false,
+  spin: 0,
   energy: 1,
   age: 0,
   life: 1,
@@ -77,6 +79,8 @@ export interface BattleDraw {
   /** Each flare's centre and radius, and its colour and energy. */
   flareCentre: InstancedBufferAttribute;
   flareColor: InstancedBufferAttribute;
+  /** Rotation and whether the flare is an angular piece of wreckage. */
+  flareShape: InstancedBufferAttribute;
   blasts: InstancedMesh;
   /** Each blast's centre and radius, and its age, seed, and how much of its remnant is left. */
   blastCentre: InstancedBufferAttribute;
