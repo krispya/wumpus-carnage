@@ -21,6 +21,12 @@ export const FLARE_CAPACITY = 64;
 export const BLAST_CAPACITY = 2;
 
 /**
+ * The layer blasts are drawn on. A blast is soft fire that fills the frame, so it is drawn apart from everything else
+ * at a lower resolution and laid back over the frame.
+ */
+export const BLAST_LAYER = 2;
+
+/**
  * Laser colours, the glow round each bolt's core, weighted by how often each is fired, after the reference's night:
  * ice blue and cornflower for its cold stars, orange, marigold, and ember for its fire, and crimson, magenta, and
  * orchid, as its smoke. Every core burns its own colour most of the way to white, `BOLT_CORE` of the way, so each

@@ -3,6 +3,7 @@ import {
   atan,
   clamp,
   cos,
+  cubeTexture,
   dot,
   exp,
   float,
@@ -26,12 +27,26 @@ import {
   smoothstep,
   step,
   time,
+  uniform,
+  uv,
   vec2,
   vec3,
+  vec4,
 } from 'three/tsl';
-import { Color, type Node, Vector3 } from 'three/webgpu';
+import {
+  Color,
+  CubeCamera,
+  CubeRenderTarget,
+  HalfFloatType,
+  Matrix4,
+  type Node,
+  type Renderer,
+  Scene,
+  Vector3,
+} from 'three/webgpu';
+import { retained } from '../utils';
 import { BEAMS, ECLIPSE, NEBULA, SKY, STARS, SUN } from './content';
-import { nebulaAt } from './nebula';
+import { fieldsAt } from './nebula';
 
 /** A colour as linear light, from its sRGB hex. */
 function rgb(hex: string) {
@@ -164,13 +179,12 @@ function eclipseAt(direction: Node<'vec3'>) {
 }
 
 /**
- * Deep space seen along `direction`, a unit vector in the world: stars scattered across it, a band of dusty cloud
- * over dark dust along the bottom, and the system's star, far off, eclipsed by a dark world and throwing beams
- * through the dust. Anything can look
- * up the sky this way, such as a ray a black hole has bent.
+ * The nebula seen along `direction`, a unit vector in the world, from its cloud `fields` there: the parts of the sky
+ * that change slowly across it, so they can be baked. Its cloud and haze glowing over the empty dark, and what the
+ * stars take from it: how thickly they cluster, how many of them are warm near its edge, and how far its dust dims
+ * them.
  */
-export function skyAt(direction: Node<'vec3'>) {
-  const fields = nebulaAt(direction);
+function nebulaFrom(direction: Node<'vec3'>, fields: Node<'vec4'>) {
   const height = fields.x;
   const smoke = fields.y;
   const stretch = fields.z;
@@ -185,6 +199,83 @@ export function skyAt(direction: Node<'vec3'>) {
   const haze = smoothstep(-0.15, 0.6, billow)
     .mul(exp(abs(height).div(NEBULA.haze.reach).negate()))
     .mul(NEBULA.haze.strength);
+  // Where the cloud gathers thickest it is cobalt. Where it thins, indigo, and near the star it glows with its light.
+  const cloudColor = mix(
+    rgb(NEBULA.thin),
+    rgb(NEBULA.thick),
+    smoothstep(0.25, 0.75, smoke.mul(stretch))
+  );
+  const starlit = rgb(BEAMS.color).mul(
+    exp(
+      dot(direction, unit(SUN.direction))
+        .oneMinus()
+        .div((BEAMS.warmth * BEAMS.warmth) / 2)
+        .negate()
+    ).mul(BEAMS.glow)
+  );
+  const hazeColor = mix(rgb(NEBULA.thin), rgb(NEBULA.thick), smoothstep(0.1, 0.7, billow));
+
+  return {
+    glow: rgb(SKY)
+      .add(hazeColor.mul(haze))
+      .add(cloudColor.add(starlit).mul(cloud.mul(NEBULA.strength))),
+    /** Patches of sky with more stars in them, and fewer between. */
+    clustering: smoothstep(-0.4, 0.5, mx_fractal_noise_float(direction.mul(3), 2))
+      .mul(1.6)
+      .add(0.2),
+    /** Near the nebula's edge, where warm stars gather. */
+    warmth: smoothstep(0.15, 0, abs(height.sub(0.03))).mul(STARS.nebulaWarmth),
+    dimming: dust.mul(NEBULA.shade).oneMinus(),
+  };
+}
+
+type Nebula = ReturnType<typeof nebulaFrom>;
+
+/**
+ * The nebula, baked once into two cubes: its glow, and the clustering, warmth, and dimming its stars take from it.
+ * The glow's cube is fine enough to hold its finest wisps at the narrowest lens, and the stars' fields change more
+ * slowly still. Kept across a hot module replacement.
+ */
+export const nebulaCubes = retained('nebula', () => ({
+  glow: new CubeRenderTarget(1024, { type: HalfFloatType }),
+  fields: new CubeRenderTarget(512, { type: HalfFloatType }),
+}));
+
+/** The nebula along `direction`, looked up in its cubes. */
+function bakedNebulaAt(direction: Node<'vec3'>): Nebula {
+  const fields = cubeTexture(nebulaCubes.fields.texture, direction);
+
+  return {
+    glow: cubeTexture(nebulaCubes.glow.texture, direction).rgb,
+    clustering: fields.r,
+    warmth: fields.g,
+    dimming: fields.b,
+  };
+}
+
+/** Bake the nebula into its cubes on `renderer`, looking out from the middle of the sky in every direction. */
+export function bakeNebula(renderer: Renderer): void {
+  const direction = normalize(positionLocal);
+  const nebula = nebulaFrom(direction, fieldsAt(direction));
+  const scene = new Scene();
+
+  for (const [target, color] of [
+    [nebulaCubes.glow, nebula.glow],
+    [nebulaCubes.fields, vec3(nebula.clustering, nebula.warmth, nebula.dimming)],
+  ] as const) {
+    scene.backgroundNode = color;
+    new CubeCamera(0.1, 10, target).update(renderer, scene);
+  }
+}
+
+/**
+ * Deep space seen along `direction`, a unit vector in the world: stars scattered across it, a band of dusty cloud
+ * over dark dust along the bottom, and the system's star, far off, eclipsed by a dark world and throwing beams
+ * through the dust. Anything can look up the sky this way, such as a ray a black hole has bent. The nebula comes from
+ * its cubes, and the stars and the eclipse, which are sharp to the pixel and alive, are worked out as they are seen.
+ */
+export function skyAt(direction: Node<'vec3'>) {
+  const nebula = bakedNebulaAt(direction);
 
   // The stars' cube: the face each direction looks through, and where on that face it lands.
   const extent = abs(direction);
@@ -205,13 +296,6 @@ export function skyAt(direction: Node<'vec3'>) {
     select(alongY, direction.xz.div(direction.y), direction.xy.div(direction.z))
   );
 
-  /** Patches of sky with more stars in them, and fewer between. */
-  const clustering = smoothstep(-0.4, 0.5, mx_fractal_noise_float(direction.mul(3), 2))
-    .mul(1.6)
-    .add(0.2);
-  /** Near the nebula's edge, where warm stars gather. */
-  const nearNebula = smoothstep(0.15, 0, abs(height.sub(0.03))).mul(STARS.nebulaWarmth);
-
   const tints = {
     blue: rgb(STARS.colors.blue),
     pale: rgb(STARS.colors.pale),
@@ -222,7 +306,7 @@ export function skyAt(direction: Node<'vec3'>) {
 
   /** A star's colour from two of its random draws: mostly blue, often ember, now and then cream. */
   function tint(pick: Node<'float'>, shade: Node<'float'>) {
-    const warm = nearNebula.add(STARS.warm);
+    const warm = nebula.warmth.add(STARS.warm);
 
     return select(
       pick.lessThan(warm),
@@ -236,7 +320,7 @@ export function skyAt(direction: Node<'vec3'>) {
     const grid = onFace.mul(layer.cells);
     const cell = floor(grid);
     const draw = (k: number) => mx_cell_noise_float(vec3(cell, face.add(6 * (index * 8 + k))));
-    const present = step(draw(0), clustering.mul(layer.density));
+    const present = step(draw(0), nebula.clustering.mul(layer.density));
     const centre = mix(vec2(STARS.margin), vec2(1 - STARS.margin), vec2(draw(1), draw(2)));
     const offset = length(fract(grid).sub(centre));
     // Cells to a pixel, from how fast the grid moves across the screen. It jumps where faces meet, so it is capped.
@@ -258,27 +342,7 @@ export function skyAt(direction: Node<'vec3'>) {
   }
 
   const [fine, bright] = STARS.layers.map(starLayer);
-  const stars = fine!.add(bright!).mul(dust.mul(NEBULA.shade).oneMinus());
-  // Where the cloud gathers thickest it is cobalt. Where it thins, indigo, and near the star it glows with its light.
-  const cloudColor = mix(
-    rgb(NEBULA.thin),
-    rgb(NEBULA.thick),
-    smoothstep(0.25, 0.75, smoke.mul(stretch))
-  );
-  const starlit = rgb(BEAMS.color).mul(
-    exp(
-      dot(direction, unit(SUN.direction))
-        .oneMinus()
-        .div((BEAMS.warmth * BEAMS.warmth) / 2)
-        .negate()
-    ).mul(BEAMS.glow)
-  );
-  const hazeColor = mix(rgb(NEBULA.thin), rgb(NEBULA.thick), smoothstep(0.1, 0.7, billow));
-  const space = rgb(SKY)
-    .add(hazeColor.mul(haze))
-    .add(cloudColor.add(starlit).mul(cloud.mul(NEBULA.strength)))
-    .add(stars);
-
+  const space = nebula.glow.add(fine!.add(bright!).mul(nebula.dimming));
   const eclipse = eclipseAt(direction);
 
   return mix(space.add(eclipse.behind), eclipse.world, eclipse.cover).add(eclipse.halo);
@@ -289,3 +353,36 @@ export function skyAt(direction: Node<'vec3'>) {
  * to directions rather than the screen, so it holds still while the camera turns.
  */
 export const voidBackground = skyAt(normalize(positionLocal));
+
+/**
+ * The camera the frame is shot through, which its pass publishes each frame, so the sky laid behind the frame looks
+ * the way the camera does. Kept across a hot module replacement.
+ */
+export const skyUniforms = retained('void', () => ({
+  uSkyWorld: uniform(new Matrix4()),
+  uSkyProjectionInverse: uniform(new Matrix4()),
+}));
+
+/**
+ * Lay the sky behind a frame drawn without it, its colour in `frame` and how much of each pixel it covers in alpha.
+ * The sky is looked up once for each pixel, along the camera's ray through it, so the frame's own pass can
+ * multisample its edges without paying for the sky again at each sample. While something else fills whatever the
+ * frame leaves clear, `covered`, the sky is left out.
+ */
+export function underSky(frame: Node<'vec4'>, covered: Node<'bool'>): Node<'vec3'> {
+  const { uSkyWorld, uSkyProjectionInverse } = skyUniforms;
+
+  return Fn(() => {
+    const color = frame.rgb.toVar();
+
+    If(covered.not(), () => {
+      const view = uSkyProjectionInverse.mul(
+        vec4(uv().x.mul(2).sub(1), uv().y.mul(2).sub(1).negate(), 1, 1)
+      );
+      const direction = normalize(uSkyWorld.mul(vec4(view.xyz.div(view.w), 0)).xyz);
+      color.addAssign(skyAt(direction).mul(frame.a.oneMinus()));
+    });
+
+    return color;
+  })();
+}

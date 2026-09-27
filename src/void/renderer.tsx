@@ -1,11 +1,14 @@
 import { useThree } from '@react-three/fiber/webgpu';
 import { useLayoutEffect } from 'react';
 import { SUN } from './content';
-import { voidBackground } from './materials';
+import { bakeNebula, voidBackground } from './materials';
 
-/** The void and its light. */
+/** The void and its light. The nebula is baked before the void is first seen. */
 export function Void() {
   const scene = useThree((state) => state.scene);
+  const renderer = useThree((state) => state.renderer);
+
+  useLayoutEffect(() => bakeNebula(renderer), [renderer]);
 
   useLayoutEffect(() => {
     scene.backgroundNode = voidBackground;

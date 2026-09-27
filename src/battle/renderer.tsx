@@ -2,7 +2,7 @@ import { useActions } from 'koota/react';
 import { useEffect, useLayoutEffect, useMemo } from 'react';
 import { InstancedBufferAttribute, InstancedMesh, PlaneGeometry, PointLight } from 'three/webgpu';
 import { battleActions } from './actions';
-import { BLAST, BLAST_CAPACITY, BOLT_CAPACITY, FLARE_CAPACITY } from './content';
+import { BLAST, BLAST_CAPACITY, BLAST_LAYER, BOLT_CAPACITY, FLARE_CAPACITY } from './content';
 import { blastMaterial, boltMaterial, flareMaterial } from './materials';
 import type { BattleDraw } from './traits';
 
@@ -41,6 +41,7 @@ function createBattleDraw(): BattleDraw {
   bolts.name = 'battle-bolts';
   flares.name = 'battle-flares';
   blasts.name = 'battle-blasts';
+  blasts.layers.set(BLAST_LAYER);
   // A blast's light reaches as far as anything it matters to, undimmed by distance.
   const glow = new PointLight(BLAST.light.color, 0, 0, 0);
   glow.name = 'battle-blast-light';

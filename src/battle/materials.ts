@@ -11,6 +11,8 @@ import {
   mix,
   normalize,
   positionGeometry,
+  positionView,
+  select,
   screenSize,
   smoothstep,
   uv,
@@ -18,11 +20,15 @@ import {
   vec4,
 } from 'three/tsl';
 import {
-  AdditiveBlending,
+  CustomBlending,
   DoubleSide,
   type InstancedBufferAttribute,
   MeshBasicNodeMaterial,
   type Node,
+  OneFactor,
+  type TextureNode,
+  SrcAlphaFactor,
+  ZeroFactor,
 } from 'three/webgpu';
 import { BLAST, BOLT_CORE, SMALLEST } from './content';
 
@@ -35,8 +41,14 @@ function pixelAt(point: Node<'vec3'>): Node<'float'> {
 
 /** Glowing light, added over whatever is behind it, never hiding it and never sorted. */
 function glowMaterial(name: string): MeshBasicNodeMaterial {
+  // Light adds to the frame's colour but never to how much of it is covered, so the sky laid behind the frame shows
+  // through the glow in full, as it would under light added straight over it.
   const material = new MeshBasicNodeMaterial({
-    blending: AdditiveBlending,
+    blending: CustomBlending,
+    blendSrc: SrcAlphaFactor,
+    blendDst: OneFactor,
+    blendSrcAlpha: ZeroFactor,
+    blendDstAlpha: OneFactor,
     depthWrite: false,
     side: DoubleSide,
     transparent: true,
@@ -202,5 +214,29 @@ export function blastMaterial(
   const edge = smoothstep(reach, reach * 0.85, out);
   material.colorNode = fire.add(flash).add(ring).add(remnant).mul(edge);
 
+  // Its light adds up, and how far off it is, which is kept as it is, tells the frame what stands in front of it.
+  material.blendSrc = OneFactor;
+  material.blendSrcAlpha = OneFactor;
+  material.blendDstAlpha = ZeroFactor;
+  material.opacityNode = positionView.z.negate();
+
   return material;
+}
+
+/**
+ * Lay blasts, drawn apart at a lower resolution, over the frame's `color`, if they were `drawn` this frame. `blast`
+ * holds their light and how far off they are, and `frame` how much of each pixel the frame covers. A blast's light
+ * shows wherever what the frame shows lies beyond it, `distance` ahead of the camera, and where something stands in
+ * front of it, only past that thing's edges.
+ */
+export function overBlast(
+  color: Node<'vec3'>,
+  blast: TextureNode,
+  drawn: Node<'float'>,
+  frame: TextureNode,
+  distance: Node<'float'>
+): Node<'vec3'> {
+  const behind = blast.a.greaterThan(distance);
+
+  return color.add(blast.rgb.mul(select(behind, frame.a.oneMinus(), 1)).mul(drawn));
 }

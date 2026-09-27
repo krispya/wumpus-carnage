@@ -109,6 +109,12 @@ const {
 } = holeUniforms;
 const { uTideHole, uTideHorizon, uTideCentre, uTide, uTideCurl, uTideWring } = holeUniforms;
 
+/**
+ * Whether a hole is bending the frame. While one is, the lens fills whatever the frame's foreground leaves clear
+ * with light it has bent.
+ */
+export const lensing = uHoleRadius.greaterThan(1e-4);
+
 /** Turn `vector` about the unit `axis` by `angle`. */
 function turned(vector: Node<'vec3'>, axis: Node<'vec3'>, angle: Node<'float'>): Node<'vec3'> {
   return vector
@@ -140,7 +146,7 @@ function least(
  * it falls, and once it has fallen past the horizon there is nothing left to see.
  */
 export function throughHole(
-  lit: TextureNode,
+  lit: Node<'vec4'>,
   depth: TextureNode,
   backdrop: TextureNode
 ): Node<'vec3'> {
@@ -148,7 +154,7 @@ export function throughHole(
   const tracedRay = rayTable(radius, uHoleRadius.greaterThan(1e-4).and(uInside.lessThanEqual(0.5)));
 
   return Fn((builder) => {
-    const foreground = lit.sample(uv()).toVar();
+    const foreground = lit.toVar();
     const result = foreground.rgb.toVar();
 
     If(uInside.greaterThan(0.5), () => {

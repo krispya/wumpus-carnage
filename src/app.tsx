@@ -7,9 +7,10 @@ import { Suspense } from 'react';
 import { bloom } from 'three/addons/tsl/display/BloomNode.js';
 import { convertToTexture, renderOutput, vec4 } from 'three/tsl';
 import { NeutralToneMapping } from 'three/webgpu';
+import { overBlast } from './battle/materials';
 import { BattleRenderer } from './battle/renderer';
-import { dreadGrade, throughHole } from './black-hole/materials';
-import { BackdropPass, ShotPass } from './black-hole/pass';
+import { dreadGrade, lensing, throughHole } from './black-hole/materials';
+import { BackdropPass, BlastPass, ShotPass } from './black-hole/pass';
 import { BlackHoleRenderer } from './black-hole/renderer';
 import { overInsert } from './director/materials';
 import { ShotRenderer, StartButton } from './director/renderer';
@@ -17,6 +18,7 @@ import { FrameLoop } from './frameloop';
 import { BLOOM, dither, grain, uCurtain, vignette } from './post/materials';
 import { SoundRenderer } from './sound/renderer';
 import { CAMERA } from './viewport/content';
+import { underSky } from './void/materials';
 import { Void } from './void/renderer';
 import { world } from './world';
 import { WumpusRenderer } from './wumpus/renderer';
@@ -69,10 +71,19 @@ function Scene() {
 function Post() {
   useRenderPipeline(({ renderPipeline, scene, camera }) => {
     const shot = new ShotPass(scene, camera);
+    const blast = new BlastPass(scene, camera);
+    const frame = shot.getTextureNode('output');
+    const unbent = overBlast(
+      underSky(frame, lensing),
+      blast.getTextureNode('output'),
+      blast.drawn,
+      frame,
+      shot.getViewZNode().negate()
+    );
     const backdrop = new BackdropPass(scene);
     const bent = convertToTexture(
       throughHole(
-        shot.getTextureNode('output'),
+        vec4(unbent, frame.a),
         shot.getTextureNode('depth'),
         backdrop.getTextureNode('output')
       ),
